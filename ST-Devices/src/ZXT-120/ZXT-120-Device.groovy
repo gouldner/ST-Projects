@@ -1,11 +1,12 @@
 /**
- *  ZXT-120 HVAC Control
+ *  ZXT-120 IR Sender Unit from Remotec
+ *  tested on V1.6H version of the device
  *
- *  Author: b.dahlem@gmail.com (based on Z-Wave Thermostat by SmartThings)
- *  Date: 2014-05-02
- *  Code: https://github.com/bdahlem/device-type.zxt-120
+ *  Author: Ronald Gouldner (based on b.dahlem@gmail.com version)
+ *  Date: 2015-01-20
+ *  Code: https://github.com/gouldner/ST-Devices/src/ZXT-120
  *
- * Copyright (C) 2013 Brian Dahlem <bdahlem@gmail.com>
+ * Copyright (C) 2013 Ronald Gouldner 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
  * without restriction, including without limitation the rights to use, copy, modify,
@@ -24,7 +25,7 @@
 
 //***** Metadata */
 //
-// A description of the ZXT-120 thermostat and its options and commands for the SmartThings hub.
+// A description of the ZXT-120 IR Extender for HVAC and its options and commands for the SmartThings hub.
 
 // Preferences pane
 //
