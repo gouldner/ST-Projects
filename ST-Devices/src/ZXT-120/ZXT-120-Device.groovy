@@ -49,6 +49,7 @@ metadata {
 
 		// Commands that this device-type exposes for controlling the ZXT-120 directly
 		command "switchMode"
+		command "switchModeOff"
 		command "switchFanMode"
 		command "switchFanOscillate"
 		command "setRemoteCode"
@@ -112,8 +113,13 @@ metadata {
 				]
 			)
 		}
+		// Battery Status tile
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
+		}
+		// Power Off Mode tile
+		standardTile("off", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
+			state "off", action:"switchModeOff", backgroundColor:"#ff0000", icon: "st.thermostat.heating-cooling-off"
 		}
 		// Mode switch.  Indicate and allow the user to change between heating/cooling modes
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
@@ -174,7 +180,7 @@ metadata {
 		// starting in the upper left working right then down.
 		main "temperature"
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
+		details(["temperature", "battery", "off", "mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
 	}
 }
 
@@ -258,7 +264,7 @@ def parse(String description)
 		
 		// if the device reported a mode change
 		if (map.name == "thermostatMode") {
-			log.ward "Entered thermostatMode section of code to be refactored"
+			log.warn "Entered thermostatMode section of code to be refactored"
 			// store the new mode
 			updateState("lastTriedMode", map.value)
 			
@@ -283,7 +289,7 @@ def parse(String description)
 		
 		// If there was a new temperature, report it to the UI
 		if (map2.value != null) {
-			log.warn "Mode bad code to be refactored"
+			log.warn "More bad code to be refactored"
 			log.debug "THERMOSTAT, adding setpoint event: $map"
 			result << createEvent(map2)
 		}
@@ -369,7 +375,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	// Determine the mode the device is reporting, based on its ZWave id
 	map.value = modeMap.find {it.value == cmd.mode}?.key
 	map.name = "thermostatMode"
-	
+	log.debug "Thermostat Mode reported : $map.value"
 	// Return the interpreted report
 	map
 }
@@ -689,7 +695,9 @@ def setThermostatFanMode(String value) {
 
 //***** Mode Commands */
 // provide simple access to mode changes
-def off() {
+def switchModeOff() {
+	// This command is called but for some reason the log.debug doesn't work
+	log.debug "Issuing Off Command"
 	setThermostatMode("off")
 }
 
