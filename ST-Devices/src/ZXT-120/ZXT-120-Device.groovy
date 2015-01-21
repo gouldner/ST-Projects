@@ -6,7 +6,7 @@
  *  Date: 2015-01-20
  *  Code: https://github.com/gouldner/ST-Devices/src/ZXT-120
  *
- * Copyright (C) 2013 Ronald Gouldner 
+ * Copyright (C) 2013 Ronald Gouldner
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
  * without restriction, including without limitation the rights to use, copy, modify,
@@ -244,7 +244,7 @@ def parse(String description)
 	// If the update was a change in the device's settings (its operating mode or thermostat setting)
 	def stateChanges = setpointMap.keySet() + "thermostatMode"
 	if (map.isStateChange && map.name in stateChanges) {
-	    log.warn "Entered Code I plan to refactor....."
+		log.warn "Entered Code I plan to refactor....."
 		// Interpret the device's setting report
 		def map2 = [
 			name: "thermostatSetpoint",
@@ -285,7 +285,7 @@ def parse(String description)
 
 	// If the update was a change in the device's fan speed
 	} else if (map.name == "thermostatFanMode" && map.isStateChange) {
-	    debug.warn "Entered Fan Mode change....also to be refactored"
+		debug.warn "Entered Fan Mode change....also to be refactored"
 		// store the new fan speed
 		updateState("lastTriedFanMode", map.value)
 	}
@@ -335,13 +335,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		case 1:
 			// temperature
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			// Conversion isn't working....
-			//map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-			//Also tried convert result to string...not working
-			//map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision).toString()
-			// Without conversion reports onscreen in celsius TODO: FIX THIS
-			map.value = cmd.scaledSensorValue.toString()
-			log.debug "Temp is now $map.value"
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale)
 			map.unit = getTemperatureScale()
 			map.name = "temperature"
 			break;
