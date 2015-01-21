@@ -335,7 +335,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		case 1:
 			// temperature
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			// Conversion isn't working....
+			//map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			//Also tried convert result to string...not working
+			//map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision).toString()
+			// Without conversion reports onscreen in celsius TODO: FIX THIS
+			map.value = cmd.scaledSensorValue.toString()
 			log.debug "Temp is now $map.value"
 			map.unit = getTemperatureScale()
 			map.name = "temperature"

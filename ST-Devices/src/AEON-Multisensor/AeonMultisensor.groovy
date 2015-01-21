@@ -1,3 +1,8 @@
+/* 
+   Ronald Gouldner 2015-01-20
+   This is the SmartThings version of the device code with one small hack. 
+   I changed Humidity to no longer write the word Humidity, it made the icon text too small
+*/
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "RG Aeon Multisensor", namespace: "gouldner", author: "Ronald Gouldner") {
@@ -62,6 +67,7 @@ metadata {
 			]
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false) {
+		        // RRG removed the work Humidity from label which was making font too small
 			state "humidity", label:'${currentValue}%', unit:""
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
