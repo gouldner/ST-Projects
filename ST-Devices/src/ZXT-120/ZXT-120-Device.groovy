@@ -213,10 +213,10 @@ def fanModes() {
 
 // fanModeMap - Link the possible fan speeds with their ZWave id numbers
 def getFanModeMap() { [
-	"fanAuto": physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_AUTO_LOW,
-	"fanLow": physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_LOW,
-	"fanMedium": physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_MEDIUM,
-	"fanHigh": physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_HIGH
+	"fanAuto": physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeReport.FAN_MODE_AUTO_LOW,
+	"fanLow": physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeReport.FAN_MODE_LOW,
+	"fanMedium": physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeReport.FAN_MODE_MEDIUM,
+	"fanHigh": physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeReport.FAN_MODE_HIGH
 ]}
 
 // Command parameters
@@ -244,7 +244,7 @@ def parse(String description)
 	// If the update was a change in the device's settings (its operating mode or thermostat setting)
 	def stateChanges = setpointMap.keySet() + "thermostatMode"
 	if (map.isStateChange && map.name in stateChanges) {
-	
+	    log.warn "Entered Code I plan to refactor....."
 		// Interpret the device's setting report
 		def map2 = [
 			name: "thermostatSetpoint",
@@ -253,6 +253,7 @@ def parse(String description)
 		
 		// if the device reported a mode change
 		if (map.name == "thermostatMode") {
+			log.ward "Entered thermostatMode section of code to be refactored"
 			// store the new mode
 			updateState("lastTriedMode", map.value)
 			
@@ -265,6 +266,7 @@ def parse(String description)
 		}
 		// If this was a temperature setting change
 		else {
+			log.warn "Entered temperature change part of code to be refactored (seems not psosible)"
 			// Determine the current cooling/heating mode and save the new temperature
 			def mode = device.latestValue("thermostatMode")
 			if (map.name == setpointModeMap[mode]) {
@@ -276,12 +278,14 @@ def parse(String description)
 		
 		// If there was a new temperature, report it to the UI
 		if (map2.value != null) {
+			log.warn "Mode bad code to be refactored"
 			log.debug "THERMOSTAT, adding setpoint event: $map"
 			result << createEvent(map2)
 		}
 
 	// If the update was a change in the device's fan speed
 	} else if (map.name == "thermostatFanMode" && map.isStateChange) {
+	    debug.warn "Entered Fan Mode change....also to be refactored"
 		// store the new fan speed
 		updateState("lastTriedFanMode", map.value)
 	}
@@ -358,7 +362,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 
 // - Thermostat Fan Mode Report
 // The device is reporting its current fan speed
-def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeReport cmd) {
 	def map = [:]
 	
 	// Determine the fan speed the device is reporting, based on its ZWave id
@@ -426,7 +430,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 
 // - Thermostat Fan Supported Modes Report
 // The device is reporting fan speeds it supports
-def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeSupportedReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeSupportedReport cmd) {
 	// Create a string with mode names for each available mode
 	def supportedFanModes = ""
 	if(cmd.auto) { supportedFanModes += "fanAuto " }
@@ -466,9 +470,9 @@ def poll() {
 	// create a list of requests to send
 	def commands = []
 	
-	commands <<	zwave.sensorMultilevelV3.sensorMultilevelGet().format()		// current temperature
+	commands <<	zwave.sensorMultilevelV1.sensorMultilevelGet().format()		// current temperature
 	commands <<	zwave.thermostatModeV2.thermostatModeGet().format()     		// thermostat mode
-	commands <<	zwave.thermostatFanModeV3.thermostatFanModeGet().format()		// fan speed
+	commands <<	zwave.thermostatFanModeV2.thermostatFanModeGet().format()		// fan speed
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()		// remote code
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
 	
@@ -541,7 +545,7 @@ def configure() {
 		// Request the device's current heating/cooling mode
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
 		// Request the device's current fan speed
-		zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format(),
+		zwave.thermostatFanModeV2.thermostatFanModeSupportedGet().format(),
 		// Assign the device to ZWave group 1
 		zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
 	], 2300)
@@ -662,9 +666,9 @@ def setThermostatFanMode(String value) {
 	log.debug value + " ${fanModeMap[value]}"
 	delayBetween([
 		// Command the device to change the fan speed
-		zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[value]).format(),
+		zwave.thermostatFanModeV2.thermostatFanModeSet(fanMode: fanModeMap[value]).format(),
 		// Request an update to make sure it worked
-		zwave.thermostatFanModeV3.thermostatFanModeGet().format()
+		zwave.thermostatFanModeV2.thermostatFanModeGet().format()
 	])
 }
 
