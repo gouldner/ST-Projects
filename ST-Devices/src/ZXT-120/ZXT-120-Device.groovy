@@ -50,6 +50,10 @@ metadata {
 		// Commands that this device-type exposes for controlling the ZXT-120 directly
 		command "switchMode"
 		command "switchModeOff"
+		command "switchModeHeat"
+		command "switchModeCool"
+		command "switchModeDry"
+		command "switchModeAuto"
 		command "switchFanMode"
 		command "switchFanOscillate"
 		command "setRemoteCode"
@@ -100,7 +104,7 @@ metadata {
 	tiles {
 		// The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
 		// of the temperature
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+		valueTile("temperature", "device.temperature") {
 			state("temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -118,12 +122,28 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 		// Power Off Mode tile
-		standardTile("off", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
+		standardTile("off", "device.thermostatMode", inactiveLabel: false) {
 			state "off", action:"switchModeOff", backgroundColor:"#ff0000", icon: "st.thermostat.heating-cooling-off"
+		}
+		// Heat Mode tile
+		standardTile("heat", "device.thermostatMode", inactiveLabel: false) {
+			state "heat", action:"switchModeHeat", backgroundColor:"#ff0000", icon: "st.thermostat.heat"
+		}
+		// Cool Mode tile
+		standardTile("cool", "device.thermostatMode", inactiveLabel: false) {
+			state "cool", action:"switchModeCool", backgroundColor:"#0000ff", icon: "st.thermostat.cool"
+		}
+		// Dry Mode tile
+		standardTile("dry", "device.thermostatMode", inactiveLabel: false) {
+			state "dry", action:"switchModeDry", backgroundColor:"#ffffff", label: "Dry", icon: "st.Bath.bath1"
+		}
+		// Auto Mode tile
+		standardTile("auto", "device.thermostatMode", inactiveLabel: false) {
+			state "auto", action:"switchModeAuto", backgroundColor:"#b266b2", icon: "st.thermostat.auto"
 		}
 		// Mode switch.  Indicate and allow the user to change between heating/cooling modes
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-			state "off", action:"switchMode", icon:"st.thermostat.heating-cooling-off", label: ' '
+			state "off", action:"switchMode", icon:"st.thermostat.heating-cooling-off", label: 'Last Setting'
 			state "heat", action:"switchMode", icon:"st.thermostat.heat", label: ' '
 			state "emergencyHeat", action:"switchMode", icon:"st.thermostat.emergency-heat", label: ' '
 			state "cool", action:"switchMode", icon:"st.thermostat.cool", label: ' '
@@ -180,7 +200,7 @@ metadata {
 		// starting in the upper left working right then down.
 		main "temperature"
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "off", "mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
+		details(["temperature", "battery", "off", "cool", "dry", "heat", "auto", "mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
 	}
 }
 
@@ -701,7 +721,7 @@ def switchModeOff() {
 	setThermostatMode("off")
 }
 
-def heat() {
+def switchModeHeat() {
 	setThermostatMode("heat")
 }
 
@@ -710,17 +730,17 @@ def emergencyHeat() {
 
 }
 
-def dry() {
+def switchModeDry() {
 	setThermostatMode("dry")
 
 }
 
-def cool() {
+def switchModeCool() {
 	setThermostatMode("cool")
 
 }
 
-def auto() {
+def switchModeAuto() {
 	setThermostatMode("auto")
 
 }
