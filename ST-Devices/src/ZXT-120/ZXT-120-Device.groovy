@@ -135,7 +135,7 @@ metadata {
 		}
 		// Dry Mode tile
 		standardTile("dry", "device.thermostatMode", inactiveLabel: false) {
-			state "dry", action:"switchModeDry", backgroundColor:"#ffffff", label: "Dry", icon: "st.Bath.bath1"
+			state "dry", action:"switchModeDry", backgroundColor:"#ffffff", label: "Dry", icon: "st.Weather.weather12"
 		}
 		// Auto Mode tile
 		standardTile("auto", "device.thermostatMode", inactiveLabel: false) {
@@ -148,7 +148,7 @@ metadata {
 			state "emergencyHeat", action:"switchMode", icon:"st.thermostat.emergency-heat", label: ' '
 			state "cool", action:"switchMode", icon:"st.thermostat.cool", label: ' '
 			state "auto", action:"switchMode", icon:"st.thermostat.auto", label: ' '
-			state "dry", action:"switchMode", icon:"st.Bath.bath1", label: 'Dry'
+			state "dry", action:"switchMode", icon:"st.Weather.weather12", label: 'Dry'
 			state "autoChangeover", action:"switchMode", icon:"st.thermostat.auto", label: ' '
 		}
 		// Fan mode switch.  Indicate and allow the user to change between fan speed settings
