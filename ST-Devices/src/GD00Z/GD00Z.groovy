@@ -137,6 +137,8 @@ def zwaveEvent(BarrierOperatorReport cmd) {
 			break
 		case BarrierOperatorReport.BARRIER_STATE_UNKNOWN_POSITION_MOVING_TO_OPEN:
 			map.value = "opening"
+			// RRG Commenting out this switch  setting....seems wrong
+			//result << createEvent(name: "contact", value: "open", displayed: false)
 			break
 		case BarrierOperatorReport.BARRIER_STATE_OPEN:
 			map.value = "open"
