@@ -105,7 +105,7 @@ metadata {
 		// The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
 		// of the temperature
 		valueTile("temperature", "device.temperature") {
-			state("temperature", label:'${currentValue}°',
+			state("temperature", label:'${currentValue}Â°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -175,13 +175,13 @@ metadata {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heat", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
+			state "heat", label:'${currentValue}Â° heat', unit:"F", backgroundColor:"#ffffff"
 		}
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
+			state "cool", label:'${currentValue}Â° cool', unit:"F", backgroundColor:"#ffffff"
 		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
@@ -190,7 +190,7 @@ metadata {
 			state "lowerTemp", action:"lowerTemperature", backgroundColor:"#ffffff", icon: "st.thermostat.thermostat-down"
 		}
 		valueTile("temperatureSetpoint", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-			state("thermostatSetpoint", label:'${currentValue}°',
+			state("thermostatSetpoint", label:'${currentValue}Â°',
 				/*backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -551,21 +551,61 @@ def poll() {
 }
 
 def setHeatingSetpoint(degrees) {
+	def degreesInteger = degrees as Integer
 	def temperatureScale = getTemperatureScale()
 	
-	def degreesInteger = degrees as Integer
+	if (temperatureScale == "C") {
+		// ZXT-120 lowest settings is 19 C
+		if (degreesInteger < 19) {
+			degreesInteger = 19;
+		}
+		// ZXT-120 highest setting is 28 C
+		if (degreesInteger > 28) {
+			degreesInteger = 28;
+		}
+	} else {
+		// ZXT-120 lowest settings is 67 F
+		if (degreesInteger < 67) {
+			degreesInteger = 67;
+		}
+		// ZXT-120 highest setting is 28
+		if (degreesInteger > 84) {
+			degreesInteger = 84;
+		}
+	}
 	log.debug "setHeatingSetpoint({$degreesInteger} ${temperatureScale})"
 	sendEvent("name":"heatingSetpoint", "value":degreesInteger)
 	
-	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
 	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100) + "}"
 }
 
 def setCoolingSetpoint(degrees) {
 	def degreesInteger = degrees as Integer
+	def temperatureScale = getTemperatureScale()
+	
+	if (temperatureScale == "C") {
+		// ZXT-120 lowest settings is 19 C
+		if (degreesInteger < 19) {
+			degreesInteger = 19;
+		} 
+		// ZXT-120 highest setting is 28 C
+		if (degreesInteger > 28) {
+			degrees = 28;
+		}
+	} else {
+		// ZXT-120 lowest settings is 67 F
+		if (degreesInteger < 67) {
+			degreesInteger = 67;
+		}
+		// ZXT-120 highest setting is 28
+		if (degreesInteger > 84) {
+			degrees = 84;
+		}
+	}
 	log.debug "setCoolingSetpoint({$degreesInteger} ${temperatureScale})"
 	sendEvent("name":"coolingSetpoint", "value":degreesInteger)
-	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
 	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius*100) + "}"
 }
 
