@@ -141,6 +141,14 @@ metadata {
 		standardTile("auto", "device.thermostatMode", inactiveLabel: false) {
 			state "auto", action:"switchModeAuto", backgroundColor:"#b266b2", icon: "st.thermostat.auto"
 		}
+		// AutoChangeover Mode tile
+		standardTile("autoChangeover", "device.thermostatMode", inactiveLabel: false) {
+			state "autoChangeover", action:"switchModeAuto", backgroundColor:"#b266b2", icon: "st.thermostat.auto"
+		}
+		// EmergencyHeat Mode tile
+		standardTile("emergencyHeat", "device.thermostatMode", inactiveLabel: false) {
+			state "emergencyHeat", action:"switchModeAuto", backgroundColor:"#ff0000", icon: "st.thermostat.emergency-heat"
+		}
 		// Mode switch.  Indicate and allow the user to change between heating/cooling modes
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
 			state "off", action:"switchMode", icon:"st.thermostat.heating-cooling-off", label: 'Last Setting'
@@ -162,6 +170,18 @@ metadata {
 		standardTile("swingMode", "device.swingMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
 			state "on", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing On'
 			state "off", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing Off'
+		}
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
+		}
+		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
+			state "heat", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
+		}
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
+		}
+		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
 		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
@@ -200,7 +220,8 @@ metadata {
 		// starting in the upper left working right then down.
 		main "temperature"
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "off", "cool", "dry", "heat", "auto", "mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
+		//details(["temperature", "battery", "off", "cool", "dry", "heat", "autoChangeover", "auto", "emergencyHeat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
+		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
 	}
 }
 
@@ -529,6 +550,26 @@ def poll() {
 	delayBetween(commands, 2300)
 }
 
+def setHeatingSetpoint(degrees) {
+	def temperatureScale = getTemperatureScale()
+	
+	def degreesInteger = degrees as Integer
+	log.debug "setHeatingSetpoint({$degreesInteger} ${temperatureScale})"
+	sendEvent("name":"heatingSetpoint", "value":degreesInteger)
+	
+	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100) + "}"
+}
+
+def setCoolingSetpoint(degrees) {
+	def degreesInteger = degrees as Integer
+	log.debug "setCoolingSetpoint({$degreesInteger} ${temperatureScale})"
+	sendEvent("name":"coolingSetpoint", "value":degreesInteger)
+	def celsius = (getTemperatureScale() == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius*100) + "}"
+}
+
+
 //***** Set the thermostat */
 def setThermostatSetpoint(degrees) {
 	// convert the temperature to a number and execute
@@ -568,14 +609,14 @@ def setThermostatSetpoint(Double degrees, setpointMode = null) {
 }
 
 // Set temperature for the heating mode
-def setHeatingSetpoint(degrees) {
-	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
-}
+//def setHeatingSetpoint(degrees) {
+//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
+//}
 
 // Set temperature for the cooling mode
-def setCoolingSetpoint(degrees) {
-	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1)
-}
+//def setCoolingSetpoint(degrees) {
+//	setThermostatSetpoint(degrees.toDouble(), physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1)
+//}
 
 // Configure
 // Syncronize the device capabilities with those that the UI provides
