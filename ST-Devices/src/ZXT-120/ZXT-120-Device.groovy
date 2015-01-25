@@ -191,6 +191,10 @@ metadata {
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "coolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
 		}
+		// Last Poll Tile
+		standardTile("lastPoll", "device.lastPoll", inactiveLabel: false) {
+			state "lastPoll", label:'${currentValue}'
+		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
 		// to allow for precise temperature setting.  Indicate the set temperature between the arrows
@@ -222,7 +226,7 @@ metadata {
 		main "temperature"
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
 		//details(["temperature", "battery", "off", "cool", "dry", "heat", "autoChangeover", "auto", "emergencyHeat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
+		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "refresh", "configure", "lastPoll", "setRemoteCode"])
 	}
 }
 
@@ -557,14 +561,19 @@ def updateState(String name, String value) {
 // Command Implementations
 // Ask the device for its current state
 def poll() {
-
+	def now=new Date()
+	def nowString = now.format("MMM/dd HH:mm")
+	
+	sendEvent("name":"lastPoll", "value":nowString)
+	
+	log.debug "Polling now $nowString"
 	// create a list of requests to send
 	def commands = []
 	
-	commands <<	zwave.sensorMultilevelV1.sensorMultilevelGet().format()		// current temperature
+	commands <<	zwave.sensorMultilevelV3.sensorMultilevelGet().format()		// current temperature
 	commands <<	zwave.batteryV1.batteryGet().format()                       // current battery level
 	commands <<	zwave.thermostatModeV2.thermostatModeGet().format()     	// thermostat mode
-	commands <<	zwave.thermostatFanModeV2.thermostatFanModeGet().format()	// fan speed
+	commands <<	zwave.thermostatFanModeV3.thermostatFanModeGet().format()	// fan speed
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()		// remote code
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
 	
@@ -754,11 +763,11 @@ def setThermostatSetpoint(Double degrees, setpointMode = null) {
 def configure() {
 	delayBetween([
 		// update the device's remote code to ensure it provides proper mode info
-		 setRemoteCode(),
+		setRemoteCode(),
 		// Request the device's current heating/cooling mode
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
 		// Request the device's current fan speed
-		zwave.thermostatFanModeV2.thermostatFanModeSupportedGet().format(),
+		zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format(),
 		// Assign the device to ZWave group 1
 		zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
 	], 2300)
