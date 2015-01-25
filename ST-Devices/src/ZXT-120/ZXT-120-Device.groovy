@@ -58,6 +58,15 @@ metadata {
 		command "switchFanOscillate"
 		command "setRemoteCode"
 		
+		//commands for thermostat interface
+		command "cool"
+		command "heat"
+		command "off"
+		// how do these work....do they take arguments ?
+		//command "setCoolingSetpoint"
+		//command "setHeatingSetpoint"
+		//command "setThermostatMode"  
+		
 		//command "adjustTemperature", ["NUMBER"]
 		
 		attribute "swingMode", "STRING"
@@ -894,9 +903,22 @@ def setThermostatFanMode(String value) {
 
 // Mode Commands 
 // provide simple access to mode changes
+
+// public interface commands for Thermostat
+def cool() {
+	switchModeCool()
+}
+
+def heat() {
+	switchModeHeat()
+}
+
+def off() {
+	switchModeOff()
+}
+
+// switchModeCommands
 def switchModeOff() {
-	// This command is called but for some reason the log.debug doesn't work
-	log.debug "Issuing Off Command"
 	setThermostatMode("off")
 }
 
@@ -914,13 +936,11 @@ def switchModeDry() {
 
 def switchModeCool() {
 	setThermostatMode("cool")
-
 }
 
 def switchModeAuto() {
 	setThermostatMode("auto")
 }
-
 
 def autoChangeover() {
 	setThermostatMode("autoChangeover")
