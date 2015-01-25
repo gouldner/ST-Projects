@@ -8,7 +8,7 @@ definition(
     namespace: "gouldner",
     author: "Ronald Gouldner",
     description: "Set ZXT-120 Mode based on temp sensor.",
-    category: "Green Living",
+    category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch@2x.png"
 )
