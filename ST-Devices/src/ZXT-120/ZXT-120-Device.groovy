@@ -193,8 +193,8 @@ metadata {
 			state "coolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
 		}
 		// Last Poll Tile
-		standardTile("lastPoll", "device.lastPoll", inactiveLabel: false) {
-			state "lastPoll", label:'${currentValue}'
+		valueTile("lastPoll", "device.lastPoll", inactiveLabel: false, decoration: "flat") {
+			state "lastPoll", label:'${currentValue}', unit:""
 		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
@@ -571,7 +571,8 @@ def updateState(String name, String value) {
 // Ask the device for its current state
 def poll() {
 	def now=new Date()
-	def nowString = now.format("MMM/dd HH:mm")
+	def tz = location.timeZone
+	def nowString = now.format("MMM/dd HH:mm",tz)
 	
 	sendEvent("name":"lastPoll", "value":nowString)
 	
