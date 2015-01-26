@@ -70,6 +70,7 @@ metadata {
 		//command "adjustTemperature", ["NUMBER"]
 		
 		attribute "swingMode", "STRING"
+		attribute "lastPoll", "STRING"
 		
 		// Z-Wave description of the ZXT-120 device
 		fingerprint deviceId: "0x0806"
@@ -396,6 +397,13 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 // The device is telling us what temperatures it is set to for a particular mode
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
 {
+	/*  Ignore this because we don't currently report on screen what the unit things the setting is
+	 * since we only set the value when the mode is selected.  Otherwise we just hold it in the device
+	 * attributes.  This is because we don't want to send new values as the settings are made or it will
+	 * turn the AC/HEAT unit on
+	 */
+	
+	/*
     log.debug "*************Entered thermostat set point cmd=$cmd"
 	// Determine the temperature and mode the device is reporting
 	def cmdScale = cmd.scale == 1 ? "F" : "C"
@@ -418,6 +426,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	
 	// Return the interpretation of the report
 	map
+	*/
 }
 
 // - Sensor Multilevel Report
@@ -525,7 +534,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 
 // - Thermostat Fan Supported Modes Report
 // The device is reporting fan speeds it supports
-def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev2.ThermostatFanModeSupportedReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeSupportedReport cmd) {
 	// Create a string with mode names for each available mode
 	def supportedFanModes = ""
 	if(cmd.auto) { supportedFanModes += "fanAuto " }
