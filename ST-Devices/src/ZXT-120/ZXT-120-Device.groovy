@@ -34,7 +34,7 @@ preferences {
 	input("remoteCode", "number",
 		title: "Remote Code (000 for learned, don't forget to hit configure after changing)",
 		description: "The number of the remote to emulate")
-	input "tempOffset", "enum", title: "Temp correction offset?", options: ["-1","-2","-3","-4","-5","0","1","2","3","4","5"]
+	input "tempOffset", "enum", title: "Temp correction offset?", options: ["-5","-4","-3","-2","-1","0","1","2","3","4","5"]
 }
 
 metadata {
@@ -73,6 +73,7 @@ metadata {
 		attribute "swingMode", "STRING"
 		attribute "lastPoll", "STRING"
 		attribute "currentConfigCode", "STRING"
+		attribute "currentTempOffset", "STRING"
 		
 		// Z-Wave description of the ZXT-120 device
 		fingerprint deviceId: "0x0806"
