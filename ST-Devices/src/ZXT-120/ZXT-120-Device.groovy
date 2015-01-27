@@ -34,6 +34,7 @@ preferences {
 	input("remoteCode", "number",
 		title: "Remote Code (000 for learned, don't forget to hit configure after changing)",
 		description: "The number of the remote to emulate")
+	input "tempOffset", "enum", title: "Temp correction offset?", options: ["-1","-2","-3","-4","-5","0","1","2","3","4","5"]
 }
 
 metadata {
@@ -71,6 +72,7 @@ metadata {
 		
 		attribute "swingMode", "STRING"
 		attribute "lastPoll", "STRING"
+		attribute "currentConfigCode", "STRING"
 		
 		// Z-Wave description of the ZXT-120 device
 		fingerprint deviceId: "0x0806"
@@ -200,6 +202,14 @@ metadata {
 		valueTile("lastPoll", "device.lastPoll", inactiveLabel: false, decoration: "flat") {
 			state "lastPoll", label:'${currentValue}', unit:""
 		}
+		// Current Config Code
+		valueTile("currentConfigCode", "device.currentConfigCode", inactiveLabel: false, decoration: "flat") {
+			state "currentConfigCode", label:'Config# ${currentValue}', unit:""
+		}      
+		// Current Temp Offset
+		valueTile("currentTempOffset", "device.currentTempOffset", inactiveLabel: false, decoration: "flat") {
+			state "currentTempOffset", label:'Offset ${currentValue}', unit:""
+		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
 		// to allow for precise temperature setting.  Indicate the set temperature between the arrows
@@ -231,7 +241,7 @@ metadata {
 		main "temperature"
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
 		//details(["temperature", "battery", "off", "cool", "dry", "heat", "autoChangeover", "auto", "emergencyHeat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "refresh", "configure", "lastPoll", "setRemoteCode"])
+		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "refresh", "configure", "lastPoll", "currentConfigCode", "currentTempOffset", "setRemoteCode"])
 	}
 }
 
@@ -288,6 +298,7 @@ def getFanModeMap() { [
 // Command parameters
 def getCommandParameters() { [
 	"remoteCode": 27,
+	"tempOffsetParam": 37,
 	"oscillateSetting": 33
 ]}
 
@@ -483,6 +494,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+	log.debug "Config Report cmd=$cmd"
 	def map = [:]
 	
 	switch (cmd.parameterNumber) {
@@ -495,9 +507,29 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 			def short remoteCodeHigh = cmd.configurationValue[0]
 			map.value = (remoteCodeHigh << 8) + remoteCodeLow
 			
+		    // Display configed code in tile
+			log.debug "currentConfigCode=$map.value"
+			sendEvent("name":"currentConfigCode", "value":map.value)
+			
 			break
 
-			// If the device is reporting its oscillate mode
+		// If the device is reporting its remote code
+		case commandParameters["tempOffsetParam"]:
+			map.name = "tempOffset"
+			map.displayed = false
+			
+			def short offset = cmd.configurationValue[0]
+			if (offset >= 0xFB) {
+				// Hex FB-FF represent negative offsets FF=-1 - FB=-5
+				offset = offset - 256
+			}
+			map.value = offset
+			log.debug "offset=$map.value"
+			// Display temp offset in tile
+			sendEvent("name":"currentTempOffset", "value":map.value)
+			
+			break
+		// If the device is reporting its oscillate mode
 		case commandParameters["oscillateSetting"]:
 			// determine if the device is oscillating
 			def oscillateMode = (cmd.configurationValue[0] == 0) ? "off" : "on"
@@ -589,6 +621,7 @@ def poll() {
 	commands <<	zwave.thermostatModeV2.thermostatModeGet().format()     	// thermostat mode
 	commands <<	zwave.thermostatFanModeV3.thermostatFanModeGet().format()	// fan speed
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()		// remote code
+	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["tempOffsetParam"]).format()  // temp offset
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
 	
 	// add requests for each thermostat setpoint available on the device
@@ -778,6 +811,7 @@ def configure() {
 	delayBetween([
 		// update the device's remote code to ensure it provides proper mode info
 		setRemoteCode(),
+		setTempOffset(),
 		// Request the device's current heating/cooling mode
 		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
 		// Request the device's current fan speed
@@ -1004,6 +1038,27 @@ def setRemoteCode() {
 				parameterNumber: commandParameters["remoteCode"], size: 2).format(),
 		// Request the device's remote code to make sure the new setting worked
 		zwave.configurationV1.configurationGet(parameterNumber: commandParameters["remoteCode"]).format()
+	])
+}
+
+def setTempOffset() {
+	// Load the user's remote code setting
+	def tempOffsetVal = tempOffset == null ? 0 : tempOffset.toInteger()
+	// Convert negative values into hex value for this param -1 = 0xFF -5 = 0xFB
+	if (tempOffsetVal < 0) {
+		tempOffsetVal = 256 + tempOffsetVal
+	}
+	
+	def configArray = [tempOffsetVal]
+	
+	log.debug "New Remote Code: ${remoteBytes}"
+	
+	delayBetween ([
+		// Send the new remote code
+		zwave.configurationV1.configurationSet(configurationValue: configArray,
+				parameterNumber: commandParameters["tempOffsetParam"], size: 1).format(),
+		// Request the device's remote code to make sure the new setting worked
+		zwave.configurationV1.configurationGet(parameterNumber: commandParameters["tempOffsetParam"]).format()
 	])
 }
 
