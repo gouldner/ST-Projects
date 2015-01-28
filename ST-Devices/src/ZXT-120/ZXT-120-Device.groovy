@@ -34,7 +34,7 @@ preferences {
 	input("remoteCode", "number",
 		title: "Remote Code (000 for learned, don't forget to hit configure after changing)",
 		description: "The number of the remote to emulate")
-	input "tempOffset", "enum", title: "Temp correction offset?", options: ["-5","-4","-3","-2","-1","0","1","2","3","4","5"]
+	input("tempOffset", "enum", title: "Temp correction offset?", options: ["-5","-4","-3","-2","-1","0","1","2","3","4","5"])
 }
 
 metadata {
@@ -626,12 +626,12 @@ def poll() {
 	commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
 	
 	// add requests for each thermostat setpoint available on the device
-	for (setpoint in setpointModeMap) {
-		def supportedModes = getDataByName("supportedModes")
-		if (supportedModes.tokenize()?.contains(setpoint.key)) {
-			commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMap[setpoint.value]).format()]
-		}
-	}
+	//for (setpoint in setpointModeMap) {
+	//	def supportedModes = getDataByName("supportedModes")
+	//	if (supportedModes.tokenize()?.contains(setpoint.key)) {
+	//		commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMap[setpoint.value]).format()]
+	//	}
+	//}
 	
 	// send the requests
 	delayBetween(commands, 2300)
@@ -1052,10 +1052,10 @@ def setTempOffset() {
 	
 	def configArray = [tempOffsetVal]
 	
-	log.debug "New Remote Code: ${remoteBytes}"
+	log.debug "TempOffset: ${tempOffsetVal}"
 	
 	delayBetween ([
-		// Send the new remote code
+		// Send the Temp Offset
 		zwave.configurationV1.configurationSet(configurationValue: configArray,
 				parameterNumber: commandParameters["tempOffsetParam"], size: 1).format(),
 		// Request the device's remote code to make sure the new setting worked
