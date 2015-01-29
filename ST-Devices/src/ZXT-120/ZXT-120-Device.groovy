@@ -131,10 +131,6 @@ metadata {
 				]
 			)
 		}
-		// Device Name and Temp
-		//valueTile("nameTemp", "device.nameTemp", inactiveLabel: false, decoration: "flat") {
-		//	state "nameTemp", label:'${device.name} ${currentValue}', unit:""
-		//}
 		// Battery Status tile
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
