@@ -35,6 +35,7 @@ preferences {
 		title: "Remote Code (000 for learned, don't forget to hit configure after changing)",
 		description: "The number of the remote to emulate")
 	input("tempOffset", "enum", title: "Temp correction offset?", options: ["-5","-4","-3","-2","-1","0","1","2","3","4","5"])
+    input("shortName", "string", title: "Short Name for Home Page Temp Icon", description: "Short Name:")
 }
 
 metadata {
@@ -74,6 +75,7 @@ metadata {
 		attribute "lastPoll", "STRING"
 		attribute "currentConfigCode", "STRING"
 		attribute "currentTempOffset", "STRING"
+		attribute "temperatureName", "STRING"
 		
 		// Z-Wave description of the ZXT-120 device
 		fingerprint deviceId: "0x0806"
@@ -211,6 +213,12 @@ metadata {
 		valueTile("currentTempOffset", "device.currentTempOffset", inactiveLabel: false, decoration: "flat") {
 			state "currentTempOffset", label:'Offset ${currentValue}', unit:""
 		}
+		// Extra Temperature Tile with Name for Home Screen
+		valueTile("temperatureName", "device.temperatureName", inactiveLabel: false, decoration: "flat") {
+			state "temperatureName", label:'${currentValue}', unit:""
+			//,  icon: "st.quirky.spotter.quirky-spotter-temp"
+			//, icon: "https://raw.githubusercontent.com/gouldner/ST-Projects/master/ST-Devices/src/ZXT-120/zxt-120-tile.png"
+		}
 		
 		// Temperature control.  Allow the user to control the target temperature with up and down arrows
 		// to allow for precise temperature setting.  Indicate the set temperature between the arrows
@@ -239,10 +247,11 @@ metadata {
 		
 		// Layout the controls on the SmartThings device UI.  The page is a 3x3 layout, tiles are layed out
 		// starting in the upper left working right then down.
-		main "temperature"
+		//main "temperature"
+		main (["temperature","temperatureName"]) 
 		//details(["temperature", "battery", "temperatureRaise", "temperatureSetpoint", "mode", "fanMode", "temperatureLower", "swingMode", "refresh", "configure", "setRemoteCode"])
 		//details(["temperature", "battery", "off", "cool", "dry", "heat", "autoChangeover", "auto", "emergencyHeat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","mode", "fanMode", "swingMode", "refresh", "configure", "setRemoteCode"])
-		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "refresh", "configure", "lastPoll", "currentConfigCode", "currentTempOffset", "setRemoteCode"])
+		details(["temperature", "battery", "off", "cool", "dry", "heat", "heatingSetpoint", "heatSliderControl", "coolingSetpoint", "coolSliderControl","thermostatMode", "fanMode", "swingMode", "temperatureName", "refresh", "configure", "lastPoll", "currentConfigCode", "currentTempOffset", "setRemoteCode"])
 	}
 }
 
@@ -459,6 +468,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale)
 			map.unit = getTemperatureScale()
 			map.name = "temperature"
+			// Send event to set ShortName + Temp tile
+			def shortNameVal = shortName == null ? "ZXT-120" : shortName
+		    def tempName = shortNameVal + " " + map.value + "°"
+			log.warn "Setting temperatureName $tempName" 
+			sendEvent("name":"temperatureName", "value":tempName)
 			break;
 		default:
 			log.warn "Unknown sensorType reading from device"
@@ -633,6 +647,7 @@ def poll() {
 	//	}
 	//}
 	
+	log.debug "Polling sending commands"
 	// send the requests
 	delayBetween(commands, 2300)
 }
@@ -1055,7 +1070,7 @@ def setTempOffset() {
 	log.debug "TempOffset: ${tempOffsetVal}"
 	
 	delayBetween ([
-		// Send the Temp Offset
+		// Send the new remote code
 		zwave.configurationV1.configurationSet(configurationValue: configArray,
 				parameterNumber: commandParameters["tempOffsetParam"], size: 1).format(),
 		// Request the device's remote code to make sure the new setting worked
