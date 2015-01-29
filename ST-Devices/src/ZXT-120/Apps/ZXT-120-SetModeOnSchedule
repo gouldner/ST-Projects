@@ -70,6 +70,6 @@ private changeMode()
 
 private sendNotificationWithMode() {
 	if (pushNotify == "yes") {
-		sendPush("${thermostat.label ?: thermostat.name} mode changed to $mode")
+		sendPush("${thermostat.displayName} mode changed to $mode")
 	}
 }
