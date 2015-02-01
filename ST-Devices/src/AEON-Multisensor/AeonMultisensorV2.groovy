@@ -1,6 +1,6 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Aeon Multisensor-2 min", namespace: "gouldner", author: "Various") {
+	definition (name: "RRG Aeon Multisensor-4 min", namespace: "gouldner", author: "Various") {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -49,23 +49,35 @@ metadata {
 			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
 			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
 		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
-			state "temperature", label:'${currentValue}°',
+		//valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		//	state "temperature", label:'${currentValue}°',
+		//	backgroundColors:[
+		//		[value: 31, color: "#153591"],
+		//		[value: 44, color: "#1e9cbb"],
+		//		[value: 59, color: "#90d2a7"],
+		//		[value: 74, color: "#44b621"],
+		//		[value: 84, color: "#f1d801"],
+		//		[value: 95, color: "#d04e00"],
+		//		[value: 96, color: "#bc2323"]
+		//	]
+		//}
+        // Changing To Hawaii Style Colors
+        // It never reaches < 59 so making < 74 Blue Cold
+        // Normal temp is 70-78 so making 70-78 Light Green (displays as brown but I like it)
+        // 80 and over is Hot so making it red
+       	valueTile("temperature", "device.temperature", inactiveLabel: false) {
+			state "temperature", label:'T${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
+				[value: 74, color: "#90d2a7"],
+				[value: 80, color: "#bc2323"]
 			]
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false) {
-			state "humidity", label:'${currentValue}%', unit:""
+			state "humidity", label:'H${currentValue}%', unit:""
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
-			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
+			state "luminosity", label:'L${currentValue}', unit:"lux"
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -164,8 +176,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "Catchall reached for cmd: ${cmd.toString()}}"
 	[:]
 }
-
 def configure() {
+    // Delay Between is set as follows
+    // Param 101 = sensor referenced
+    // Param 111 = Time in seconds to report
+    // Param 102&112 and 103&113 act like 101&111 for setting 3 different times if desired
+    // sensor reference is based on bits 1,5,6,7 
+    // 1=1=Battery
+    // 5=32=Temp
+    // 6=64=Humidity 
+    // 7=128=Luminosity 
+    // So Temp+Humidity+Luminosity = 224
 	delayBetween([
 		// send binary sensor report instead of basic set for motion
 		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
@@ -173,22 +194,17 @@ def configure() {
 		// send no-motion report 2 mintues after motion stops
 		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 120).format(),
 
-		// send temperature data periodically
-		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 32).format(),
+		// send Temperature, Humidity,Illuminance every 4 min
+		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 224).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 240).format(),
 
-        // send humidity data periodically
-		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 64).format(),  
+        // send Battery data Every 12 Min
+		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 720).format(),  
 
-        // send illuminance & battery periodically
-		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 129).format(),
-
-        // send temperature data every 4 minutes
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 230).format(),
-
-        // send humidity data every 12 minutes
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 710).format(),
-
+        // Unused Set 3
+		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),
 		// send illuminance & battery every 1 hour
-		zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 3590).format()
+		zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 0).format()
 	])
 }

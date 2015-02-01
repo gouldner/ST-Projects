@@ -461,7 +461,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		case 1:
 			// temperature
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale)
+			// converTemp returns string with two decimal places
+			// convert to double then to int to drop the decimal
+			Integer temp = (int) convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale).toDouble()
+			log.debug "temp=${temp}"
+			map.value = temp
 			map.unit = getTemperatureScale()
 			map.name = "temperature"
 			// Send event to set ShortName + Temp tile
