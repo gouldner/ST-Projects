@@ -49,7 +49,7 @@ metadata {
         	}
    
 
-            standardTile("refresh", "device.energy_today", inactiveLabel: false, decoration: "flat") {
+            standardTile("refresh", "device.weight", inactiveLabel: false, decoration: "flat") {
                 state "default", action:"polling.poll", icon:"st.secondary.refresh"
             }
 
