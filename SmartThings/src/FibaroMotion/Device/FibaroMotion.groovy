@@ -35,7 +35,8 @@
  */
 
  preferences {
-	 input("ledOnOff", "enum", title: "LED ?", default:"On", options: ["On","Off"])
+	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
+	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
  }
  
  /**
@@ -60,8 +61,6 @@
         command		"updateZwaveParam"
         command		"test"
         command		"configure"
-		command		"sendConfiguredPrefs"
-        command     "setParams2RonsPrefs"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x84,0x85,0x80,0x8F,0x56,0x72,0x86,0x70,0x8E,0x31,0x9C,0xEF,0x30,0x31,0x9C"
 	}
@@ -118,12 +117,6 @@
         standardTile("listCurrentParams", "listCurrentParams", inactiveLabel: false, decoration: "flat") {
 			state "listCurrentParams", label:'List', action:"listCurrentParams"
 		}
-        standardTile("setParams2RonsPrefs", "setParams2RonsPrefs", inactiveLabel: false, decoration: "flat") {
-			state "setParams2RonsPrefs", label:'Ron', action:"setParams2RonsPrefs"
-		}
-		standardTile("sendConfiguredPrefs", "sendConfiguredPrefs", inactiveLabel: false, decoration: "flat") {
-			state "sendConfiguredPrefs", label:'Send', action:"sendConfiguredPrefs"
-		}
         standardTile("acceleration", "device.acceleration") {
 			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
 			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
@@ -131,7 +124,7 @@
         
 
 		main(["motion", "temperature", "acceleration", "illuminance"])
-		details(["motion", "temperature", "acceleration", "battery", "illuminance", "configure","sendConfiguredPrefs","listCurrentParams","setParams2RonsPrefs"])
+		details(["motion", "temperature", "acceleration", "battery", "illuminance", "configure","listCurrentParams"])
 	}
 }
  
@@ -170,6 +163,15 @@ def configure() {
 	    cmds << zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 80, size: 1).format()
 	}
 	cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
+	
+	if (tamperLedOnOff == "Off") {
+		log.debug "Setting Tamper LED off"
+		cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 89, size: 1).format()
+	} else {
+		log.debug "Setting Tamper LED on"
+		cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
+	}
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
     
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
@@ -430,63 +432,6 @@ def resetParams2StDefaults() {
     
     delayBetween(cmds, 500)
 }
-
-def setParams2RonsPrefs() {
-	log.debug "Setting Sensor Parameters to Ron's Preferences"
-	def cmds = []
-	// Sensitivity 8-255 default 10 (lower value more sensitive)
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 1, size: 1).format()
-	// Blind Time 0-15 default 15 (8 seconds) seconds = .5 * (setting + 1)
-	// Longer Blind = Longer Battery Life
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [15], parameterNumber: 2, size: 1).format()
-	
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 4, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,30], parameterNumber: 6, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 8, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 9, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 12, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 16, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [15], parameterNumber: 20, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,30], parameterNumber: 22, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 26, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 40, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 42, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [3,132], parameterNumber: 62, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 64, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 66, size: 2).format()
-	// Led Signal Mode Default Default 10  0=Inactive
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [50], parameterNumber: 81, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,100], parameterNumber: 82, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [3,232], parameterNumber: 83, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [18], parameterNumber: 86, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [28], parameterNumber: 87, size: 1).format()
-    // Tamper LED Flashing (White/REd/Blue) 0=Off 1=On
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 89, size: 1).format()
-    
-    delayBetween(cmds, 500)
-}
-
-def sendConfiguredPrefs() {
-	log.debug "Sending Preferences as set"
-	def cmds = []
-	
-	if (ledOnOff == "Off") {
-		log.debug "Setting LED off"
-		// 0 = LED Off signal mode
-		cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
-	} else {
-		log.debug "Setting LED on"
-		 // ToDo Add preference for other available Led Signal Modes
-		cmds << zwave.configurationV2.configurationSet(configurationValue: [10], parameterNumber: 80, size: 1).format()
-	}
-	cmds << zwave.configurationV2.configurationGet(parameterNumber: 80).format()
-	delayBetween(cmds, 500)
-}
-
 
  /**
  * Lists all of available Fibaro parameters and thier current settings out to the 
