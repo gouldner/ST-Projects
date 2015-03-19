@@ -528,7 +528,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 			
 			break
 
-		// If the device is reporting its remote code
+		// If the device is reporting its tempOffset
 		case commandParameters["tempOffsetParam"]:
 			map.name = "tempOffset"
 			map.displayed = false
