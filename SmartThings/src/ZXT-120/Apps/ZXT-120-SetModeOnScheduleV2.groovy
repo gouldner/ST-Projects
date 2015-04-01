@@ -55,6 +55,12 @@ def setNextSchedule()
 	def now=new Date()
 	def tz = location.timeZone
 	def dayString = now.format("EEE",tz)
+	// TODO: Change to cron format to fix issue when earlier time changes to later time
+	//       between two schedules causing duplication of event.  IE M-F 7am S-S 9am results in second 9AM fire on Friday since
+	//       the ST schedule command only looks at the time and assumes you are scheduling for same day if time is in future
+	//   NOTE: cron format is like quartz http://quartz-scheduler.org/documentation/quartz-1.x/tutorials/crontrigger
+	//   Sec Min Hour DayOfMonth Month DayOfWeek Year (* = all, ?=no value)
+	//   exmaple 7:30AM is "0 30 7 * * * ?"
 	if (dayString.equals('Fri') || dayString.equals('Sat')) {
 	    // Next event will be Sat or Sunday
 	    log.debug "$dayString: Scheduling Sat-Sun $time2"
