@@ -60,19 +60,20 @@ def setNextSchedule()
     def schedDays
 	if (dayString.equals('Fri') || dayString.equals('Sat')) {
         // Next event will be Sat or Sunday
-        log.debug "Using Sat/Sun Schedule"
+        log.debug "Using Sat/Sun Schedule $time2"
         schedTime = new Date(timeToday(time2).time)
-        schedDays = "1,7"
+        schedDays = "SAT,SUN"
 	} else {
-        log.debug "Using M-F Schedule"
+        log.debug "Using M-F Schedule $time1"
         schedTime = new Date(timeToday(time1).time)
-        schedDays = "2-6"
+        schedDays = "MON-FRI"
 	}
     def hour = schedTime.format("H",tz)
     def min = schedTime.format("m",tz)
     log.debug "$dayString: Scheduling $schedDays $hour:$min"
-    // Quartz crontab format Sec Min Hour DayOfMonth Month DayOfWeek Year
-	schedule("0 $min $hour * * $schedDays ?", "scheduleCheck")
+    // Quartz crontab format Sec Min Hour DayOfMonth Month DayOfWeek 
+    // example 0 30 9 ? * SAT,SUN  for 9:30am Saturday and Sunday
+	schedule("0 $min $hour ? * $schedDays", "scheduleCheck")
 }
 
 private changeMode()
