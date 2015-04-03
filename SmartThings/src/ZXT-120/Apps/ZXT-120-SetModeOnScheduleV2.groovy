@@ -33,6 +33,7 @@ preferences {
 
 def installed()
 {
+    log.debug("installed called time1=${time1}")
 	schedule(time1, "scheduleCheck")
 }
 
@@ -55,20 +56,23 @@ def setNextSchedule()
 	def now=new Date()
 	def tz = location.timeZone
 	def dayString = now.format("EEE",tz)
-	// TODO: Change to cron format to fix issue when earlier time changes to later time
-	//       between two schedules causing duplication of event.  IE M-F 7am S-S 9am results in second 9AM fire on Friday since
-	//       the ST schedule command only looks at the time and assumes you are scheduling for same day if time is in future
-	//   NOTE: cron format is like quartz http://quartz-scheduler.org/documentation/quartz-1.x/tutorials/crontrigger
-	//   Sec Min Hour DayOfMonth Month DayOfWeek Year (* = all, ?=no value)
-	//   exmaple 7:30AM is "0 30 7 * * * ?"
+    def schedTime
+    def schedDays
 	if (dayString.equals('Fri') || dayString.equals('Sat')) {
-	    // Next event will be Sat or Sunday
-	    log.debug "$dayString: Scheduling Sat-Sun $time2"
-	    schedule(time2, "scheduleCheck")
+        // Next event will be Sat or Sunday
+        log.debug "Using Sat/Sun Schedule"
+        schedTime = new Date(timeToday(time2).time)
+        schedDays = "1,7"
 	} else {
-	    log.debug "$dayString: Scheduling Mon-Fri $time1"
-	    schedule(time1, "scheduleCheck")
+        log.debug "Using M-F Schedule"
+        schedTime = new Date(timeToday(time1).time)
+        schedDays = "2-6"
 	}
+    def hour = schedTime.format("H",tz)
+    def min = schedTime.format("m",tz)
+    log.debug "$dayString: Scheduling $schedDays $hour:$min"
+    // Quartz crontab format Sec Min Hour DayOfMonth Month DayOfWeek Year
+	schedule("0 $min $hour * * $schedDays ?", "scheduleCheck")
 }
 
 private changeMode()
