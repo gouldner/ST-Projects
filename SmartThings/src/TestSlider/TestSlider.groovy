@@ -37,7 +37,7 @@ metadata {
 		valueTile("value2", "device.testValue2", inactiveLabel: false, decoration: "flat") {
 			state "value2", action:"reportTestValue2", label:'${currentValue}', unit:""
 		}
-		controlTile("value2SliderControl", "device.testValue2", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
+		controlTile("value2SliderControl", "device.testValue2", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "value2SliderControl", action:"setTestValue2", backgroundColor:"#00ff00"
 		}
 		
