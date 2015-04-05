@@ -185,15 +185,15 @@ metadata {
 			state "on", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing On'
 			state "off", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing Off'
 		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
+			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor: "#d04e00"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "heatingSetpoint", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
-		}
+		}        
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "coolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
 		}
@@ -528,7 +528,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 			
 			break
 
-		// If the device is reporting its tempOffset
+		// If the device is reporting its remote code
 		case commandParameters["tempOffsetParam"]:
 			map.name = "tempOffset"
 			map.displayed = false
