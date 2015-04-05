@@ -61,11 +61,11 @@ def setNextSchedule()
 	if (dayString.equals('Fri') || dayString.equals('Sat')) {
         // Next event will be Sat or Sunday
         log.debug "Using Sat/Sun Schedule $time2"
-        schedTime = new Date(timeToday(time2).time)
+        schedTime = timeToday(time2,tz)
         schedDays = "SAT,SUN"
 	} else {
         log.debug "Using M-F Schedule $time1"
-        schedTime = new Date(timeToday(time1).time)
+        schedTime = timeToday(time1,tz)
         schedDays = "MON-FRI"
 	}
     def hour = schedTime.format("H",tz)
