@@ -40,10 +40,10 @@
 	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
 	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
 	 input("illumReportThresh", "number",
-		 title: "Illum Report Threshold (40) 0-65535 0=no reports sent, 200=(default)",
+		 title: "Illum Report Threshold in Lux (40) 0-65535 0=no reports sent, 200=(default)",
 		 description: "Illumination reports when lux changes by this amount", defaultValue:"200")
 	 input("illumReportInt", "number",
-		 title: "Illum Report Interval (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
+		 title: "Illum Report Interval in Seconds (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
 		 description: "Time interval in seconds to report illum regardless of change", defaultValue:"0")
  }
  
