@@ -39,6 +39,9 @@
      input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
 	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
+	 input("illumReportInt", "number",
+		 title: "Illum Report Interval (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
+		 description: "Time interval in seconds to report illum regardless of change")
  }
  
  /**
@@ -174,6 +177,16 @@ def configure() {
 		cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
 	}
 	cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
+		
+	log.debug "Illum Interval Preference illumReportInt=$illumReportInt"
+	def illumReportIntAsInt = illumReportInt.toInteger()
+	if (illumReportIntAsInt >= 0 && illumReportIntAsInt < 65535 ) {		
+		def short illumReportIntLow = illumReportIntAsInt & 0xFF
+		def short illumReportIntHigh = (illumReportIntAsInt >> 8) & 0xFF
+		def illumReportBytes = [illumReportIntHigh, illumReportIntLow]
+		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
+	}
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
     
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
@@ -417,12 +430,13 @@ def resetParams2StDefaults() {
     cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 26, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 40, size: 2).format()
+    // Illum Report Interval 0=none, 1-5 may cause temp report fail, low values waste battery
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 42, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [3,132], parameterNumber: 62, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 64, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 66, size: 2).format()
-	// Led Signal Mode Default Default 10  0=Inactive
+    // Led Signal Mode Default Default 10  0=Inactive
     cmds << zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 80, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [50], parameterNumber: 81, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0,100], parameterNumber: 82, size: 2).format()
@@ -449,6 +463,7 @@ def resetParams2StDefaults() {
 def listCurrentParams() {
 	log.debug "Listing of current parameter settings of ${device.displayName}"
     def cmds = []
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 2).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
@@ -464,17 +479,22 @@ def listCurrentParams() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 26).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
+*/
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 62).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 64).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 66).format()
+*/
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 81).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 82).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 83).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 86).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 87).format()
+*/
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
     
 	delayBetween(cmds, 500)
