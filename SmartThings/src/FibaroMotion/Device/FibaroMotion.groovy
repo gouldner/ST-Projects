@@ -35,6 +35,8 @@
  */
 
  preferences {
+ 
+     input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
 	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
  }
