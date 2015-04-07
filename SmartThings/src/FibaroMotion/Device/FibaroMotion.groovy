@@ -39,9 +39,12 @@
      input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
 	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
+	 input("illumReportThresh", "number",
+		 title: "Illum Report Threshold (40) 0-65535 0=no reports sent, 200=(default)",
+		 description: "Illumination reports when lux changes by this amount", defaultValue:"200")
 	 input("illumReportInt", "number",
 		 title: "Illum Report Interval (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
-		 description: "Time interval in seconds to report illum regardless of change")
+		 description: "Time interval in seconds to report illum regardless of change", defaultValue:"0")
  }
  
  /**
@@ -180,13 +183,23 @@ def configure() {
 		
 	log.debug "Illum Interval Preference illumReportInt=$illumReportInt"
 	def illumReportIntAsInt = illumReportInt.toInteger()
-	if (illumReportIntAsInt >= 0 && illumReportIntAsInt < 65535 ) {		
+	if (illumReportIntAsInt >= 0 && illumReportIntAsInt <= 65535 ) {		
 		def short illumReportIntLow = illumReportIntAsInt & 0xFF
 		def short illumReportIntHigh = (illumReportIntAsInt >> 8) & 0xFF
 		def illumReportBytes = [illumReportIntHigh, illumReportIntLow]
 		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
 	}
 	cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
+	
+	log.debug "Illum Report Threshole Preference illumReportThresh=$illumReportThresh"
+	def illumReportThreshAsInt = illumReportThresh.toInteger()
+	if (illumReportThreshAsInt >= 0 && illumReportThreshAsInt <= 65535 ) {
+		def short illumReportThreshLow = illumReportThreshAsInt & 0xFF
+		def short illumReportThreshHigh = (illumReportThreshAsInt >> 8) & 0xFF
+		def illumReportThreshBytes = [illumReportThreshHigh, illumReportThreshLow]
+		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportThreshBytes, parameterNumber: 40, size: 2).format()
+	}
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
     
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
