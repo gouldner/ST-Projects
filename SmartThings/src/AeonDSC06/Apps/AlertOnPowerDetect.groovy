@@ -37,23 +37,35 @@ preferences {
     section("Report every N Minutes ...") {
 	    input name: "reportMin", type: "number", title:"Min", required: true, defaultValue:30, multiple: false
 	}
+    section("Report every N Minutes ...") {
+	    input name: "reportMin", type: "number", title:"Min", required: true, defaultValue:30, multiple: false
+	}
+    section("Debug Logging...") {
+    input "debugOutput", "boolean", title: "Enable debug logging?", defaultValue: false, displayDuringSetup: true
+    }
+}
+
+def logDebugIfEnabled(message) {
+    if (debugOutput) {
+        log.debug "${message}"
+    }
 }
 
 def installed() {
-	log.debug("Installed with settings: ${settings}")
+	logDebugIfEnabled("Installed with settings: ${settings}")
 
 	initialize()
 }
 
 def updated() {
-	log.debug("Updated with settings: ${settings}")
+	logDebugIfEnabled("Updated with settings: ${settings}")
 
 	unsubscribe()
 	initialize()
 }
 
 def initialize() {
-    log.debug("initialize called reportMin=${reportMin}")
+    logDebugIfEnabled("initialize called reportMin=${reportMin}")
 	subscribe(checkPowerMeter, "power", powerCheck)
     state.reportedTime = 0
 }
@@ -66,19 +78,20 @@ def sendPowerNotification(message) {
     def now = new Date();
     def nowMinutes = Math.round(now.getTime() / 60000);
     
-    log.debug "sendPowerNotification called nowMinutes=$nowMinutes reportedTime:$reportedTime"
+    logDebugIfEnabled("sendPowerNotification called nowMinutes=$nowMinutes reportedTime:$reportedTime")
     
     if ((nowMinutes - reportedTime) > reportMin) {
+        logDebugIfEnabled("sending push message:${message}")
 	    sendPush(message)      
         state.reportedTime = nowMinutes
     } else {
-        log.debug "Message already reported"
+        logDebugIfEnabled("Message already reported reporting every:${reportMin}")
     }
 }
 
 def powerCheck(evt) {
     def meterValue = evt.value as double
-    log.debug "powerCheck called powerLimit=$powerLimit meterValue=$meterValue"
+    logDebugIfEnabled("powerCheck called powerLimit=$powerLimit meterValue=$meterValue")
 
     if (reportWhen == "over" ) {
         // If over report
