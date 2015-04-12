@@ -37,9 +37,6 @@ preferences {
     section("Report every N Minutes ...") {
 	    input name: "reportMin", type: "number", title:"Min", required: true, defaultValue:30, multiple: false
 	}
-    section("Report every N Minutes ...") {
-	    input name: "reportMin", type: "number", title:"Min", required: true, defaultValue:30, multiple: false
-	}
     section("Debug Logging...") {
         input name: "debugOutput", type: "boolean", title: "Enable debug logging?", defaultValue: false
     }
