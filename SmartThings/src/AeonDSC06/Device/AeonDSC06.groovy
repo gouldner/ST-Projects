@@ -28,6 +28,10 @@
  *
  *  2015-01-27: Version: 1.2.0
  *  Added preference to turn on/off displaying of power events in the activity log
+ *   
+ *  2015-04-12: Version: 1.2.1 By: Ronald Gouldner
+ *  Modified power reading to mW since I need more percision to monitor my wine cooler
+ *  I plan to make this a preference perhaps but for not hard coding meets my needs.
  *
  *  Developer's Notes
  *  Raw Description	0 0 0x1001 0 0 0 a 0x25 0x31 0x32 0x27 0x70 0x85 0x72 0x86 0xEF 0x82
@@ -47,7 +51,7 @@
  *  0x82 COMMAND_CLASS_HAIL			V1
  */
 metadata {
-    definition (name: "Aeon Labs Smart Energy Switch", namespace: "elasticdev", author: "James P") {
+    definition (name: "RRG - Aeon Labs Smart Energy Switch-DSC06", namespace: "gouldner", author: "James P") {
 	capability "Switch"
 	capability "Energy Meter"
 	capability "Power Meter"
@@ -88,7 +92,7 @@ metadata {
 	    state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 	}
 	valueTile("power", "device.power", decoration: "flat") {
-	    state "default", label:'${currentValue} W'
+	    state "default", label:'${currentValue} mW'
 	}
 	valueTile("energy", "device.energy", decoration: "flat") {
 	    state "default", label:'${currentValue} kWh'
@@ -424,7 +428,9 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
             break;
         case 2: //Watts
             previousValue = device.currentValue("power") ?: cmd.scaledPreviousMeterValue ?: 0
-            map.value = Math.round(cmd.scaledMeterValue)
+            // RRG Try reporting mW milliwatts
+            map.value = Math.round(cmd.scaledMeterValue*1000)
+            log.debug "Reported Power:$cmd.scaledMeterValue:$map.value"
             break;
         case 3: //pulses
             map.value = Math.round(cmd.scaledMeterValue)
@@ -465,7 +471,9 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
         case physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_POWER_VERSION_2: 	// 4
             map.name = "power"
             map.unit = cmd.scale ? "BTU/h" : "W"
-            map.value = Math.round(cmd.scaledSensorValue)
+            // RRG Try reporting mW milliwatts
+            map.value = Math.round(cmd.scaledSensorValue*1000)
+            log.debug "MultiLevel Reported Power:$cmd.scaledSensorValue:$map.value"
             break;
         case physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_VOLTAGE_VERSION_3:	// 15
             map.name = "voltage"
