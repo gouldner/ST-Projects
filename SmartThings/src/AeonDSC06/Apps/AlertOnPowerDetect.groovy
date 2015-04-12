@@ -41,12 +41,12 @@ preferences {
 	    input name: "reportMin", type: "number", title:"Min", required: true, defaultValue:30, multiple: false
 	}
     section("Debug Logging...") {
-    input "debugOutput", "boolean", title: "Enable debug logging?", defaultValue: false, displayDuringSetup: true
+        input name: "debugOutput", type: "boolean", title: "Enable debug logging?", defaultValue: false
     }
 }
 
 def logDebugIfEnabled(message) {
-    if (debugOutput) {
+    if (state.debugOutput) {
         log.debug "${message}"
     }
 }
@@ -68,11 +68,9 @@ def initialize() {
     logDebugIfEnabled("initialize called reportMin=${reportMin}")
 	subscribe(checkPowerMeter, "power", powerCheck)
     state.reportedTime = 0
+    state.debugOutput = ("true" == debugOutput)
 }
 
-// Note: Logging not working in this method
-//       state change also not working in this method 
-//       WHY ?
 def sendPowerNotification(message) {
     def reportedTime = state.reportedTime as int
     def now = new Date();
