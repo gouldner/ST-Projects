@@ -48,6 +48,7 @@ metadata {
 		capability "Polling"
 		capability "Sensor"
 		capability "Battery"
+        capability "Switch"
 
 		// Commands that this device-type exposes for controlling the ZXT-120 directly
 		//command "switchMode"
@@ -988,6 +989,12 @@ def heat() {
 
 def off() {
 	switchModeOff()
+}
+
+def on() {
+    // Added "Switch Attribute on/off for Harmony Remote
+    // TODO: RRG add preference for on turns on heat or AC hard code to ac for now
+    switchModeCool()
 }
 
 // switchModeCommands
