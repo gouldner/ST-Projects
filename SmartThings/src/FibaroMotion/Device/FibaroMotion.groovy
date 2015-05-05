@@ -31,20 +31,27 @@
  *		Leaned out parse and moved most device info getting into configuration method.
  *
  * 3.   20150318    Ronald Gouldner
- *      Added LedOnOff Preference and comment pref settings
+ *      Added LedOnOff Preference and comment pref setting
+ * 4.   20150504    Ronald Gouldner
+ *      Added more preferences
  */
 
  preferences {
  
      input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-	 input("ledOnOff", "enum", title: "LED (80)?", default:"On", options: ["On","Off"])
+     input("ledOnOff", "enum", title: "LED On/Off ?", default:"On", options: ["On","Off"])
+	 input("ledModeFrequency", "enum", title: "LED Frequency", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
+	 input("ledModeColor", "enum", title: "LED Color (80)?", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
+	 input("ledBrightness", "number",
+		   title: "LED Brightness % (81)? ",
+		   description: "LED Brightness Level Percent (1-100)", defaultValue:50)
 	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
 	 input("illumReportThresh", "number",
 		 title: "Illum Report Threshold in Lux (40) 0-65535 0=no reports sent, 200=(default)",
-		 description: "Illumination reports when lux changes by this amount", defaultValue:"200")
+		 description: "Illumination reports when lux changes by this amount", defaultValue:200)
 	 input("illumReportInt", "number",
 		 title: "Illum Report Interval in Seconds (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
-		 description: "Time interval in seconds to report illum regardless of change", defaultValue:"0")
+		 description: "Time interval in seconds to report illum regardless of change", defaultValue:0)
  }
  
  /**
@@ -55,7 +62,7 @@
  * @return none
  */
  metadata {
-	definition (name: "RRG Enhanced - Fibaro Motion Sensor", namespace: "gouldner", author: "SmartThings") {
+	definition (name: "RRG Enhanced - Fibaro Motion Sensor (Beta)", namespace: "gouldner", author: "SmartThings") {
 		capability 	"Motion Sensor"
 		capability 	"Temperature Measurement"
 		capability 	"Acceleration Sensor"
@@ -168,9 +175,98 @@ def configure() {
 	} else {
 	    log.debug "Setting LED on"
  	    // ToDo Add preference for other available Led Signal Modes
-	    cmds << zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 80, size: 1).format()
+		def ledModeConfigValue=0
+		if (ledModeFrequency == "Once") {
+			if (ledModeColor == "Temp") {
+				    ledModeConfigValue=1
+			} else if (ledModeColor == "Flashlight") {
+				    ledModeConfigValue=2
+			} else if (ledModeColor == "White") {
+				    ledModeConfigValue=3
+			}else if (ledModeColor == "Red") {
+				    ledModeConfigValue=4
+			}else if (ledModeColor == "Green") {
+				    ledModeConfigValue=5
+			}else if (ledModeColor == "Blue") {
+				    ledModeConfigValue=6
+			}else if (ledModeColor == "Yellow") {
+				    ledModeConfigValue=7
+			}else if (ledModeColor == "Cyan") {
+				    ledModeConfigValue=8
+			}else if (ledModeColor == "Magenta") {
+				    ledModeConfigValue=9
+			} else {
+			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+				ledModeConfigValue=10
+			}
+		} else if (ledModeFrequency == "Long-Short") {
+			if (ledModeColor == "Temp") {
+				ledModeConfigValue=10
+		    } else if (ledModeColor == "Flashlight") {
+				ledModeConfigValue=11
+		    } else if (ledModeColor == "White") {
+				ledModeConfigValue=12
+		    } else if (ledModeColor == "Red") {
+				ledModeConfigValue=13
+		    } else if (ledModeColor == "Green") {
+				ledModeConfigValue=14
+		    } else if (ledModeColor == "Blue") {
+				ledModeConfigValue=15
+		    } else if (ledModeColor == "Yellow") {
+				ledModeConfigValue=16
+		    } else if (ledModeColor == "Cyan") {
+				ledModeConfigValue=17
+		    } else if (ledModeColor == "Magenta") {
+				ledModeConfigValue=18
+		    } else {
+			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+				ledModeConfigValue=10
+			}
+		} else if (ledModeFrequency =="Long-Two Short") {
+			if (ledModeColor == "Temp") {
+				ledModeConfigValue=19
+			} else if (ledModeColor == "Flashlight") {
+			    log.info "Flashlight Mode selected with Frequency Long-Two Short setting ledMode to 11-flashlight mode"
+				ledModeConfigValue=11
+			} else if (ledModeColor == "White") {
+				ledModeConfigValue=20
+			} else if (ledModeColor == "Red") {
+				ledModeConfigValue=21
+			} else if (ledModeColor == "Green") {
+				ledModeConfigValue=22
+			} else if (ledModeColor == "Blue") {
+				ledModeConfigValue=23
+			} else if (ledModeColor == "Yellow") {
+				ledModeConfigValue=24
+			} else if (ledModeColor == "Cyan") {
+				ledModeConfigValue=25
+			} else if (ledModeColor == "Magenta") {
+				ledModeConfigValue=26
+			} else {
+			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+				ledModeConfigValue=10
+			}
+		} else {
+		    log.warn "Unknown LED Frequencey-Setting LED Mode to default of 10"
+			ledModeConfigValue=10
+		}
+		cmds << zwave.configurationV1.configurationSet(configurationValue: [ledModeConfigValue], parameterNumber: 80, size: 1).format()
 	}
 	cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
+	
+	//  Set Brightness Parameter (81) Percentage 0-100
+	log.debug "LED Brightness $ledBrightness"
+	def brightness = ledBrightness as int
+	if (brightness<0) {
+		log.warn "LED Brightness less than 0, setting to 0"
+	    brightness=0
+	}
+	if (brightness>100) {
+		log.warn "LED Brightness greater than 100, setting to 100"
+		brightness=100
+	}
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [brightness], parameterNumber: 81, size: 1).format()
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 81).format()
 	
 	if (tamperLedOnOff == "Off") {
 		log.debug "Setting Tamper LED off"
