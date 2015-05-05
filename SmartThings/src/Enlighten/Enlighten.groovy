@@ -30,6 +30,7 @@ metadata {
     attribute "energy_life", "STRING"
 	attribute "production_level", "STRING"
 	attribute "today_max_prod", "NUMBER"
+	attribute "today_max_prod_str", "STRING"
 	attribute "today_max_day", "STRING"
 	attribute "reported_id", "STRING"
         
@@ -64,7 +65,7 @@ metadata {
 			valueTile("productionLevel", "device.production_level") {
 				state("productionLevel", label: '${currentValue}%\nProduction', unit:"%", backgroundColor: "#0000FF")
 			}
-			valueTile("todayMaxProd", "device.today_max_prod") {
+			valueTile("todayMaxProd", "device.today_max_prod_str") {
 				state("todayMaxProd", label: '${currentValue}%\nMax', unit:"%", backgroundColor: "#0000FF")
 			}
             valueTile("energy_life", "device.energy_life", width: 1, height: 1, canChangeIcon: true) {
@@ -127,7 +128,7 @@ def energyRefresh() {
 			def tz = location.timeZone
 			def todayDay = now.format("dd",tz)
 			def today_max_day = device.currentValue("today_max_day")
-            def today_max_prod = new BigDecimal(device.currentValue("today_max_prod"))
+            def today_max_prod = device.currentValue("today_max_prod")
 			def todayMaxProd=today_max_prod
             log.debug "todayMaxProd was ${todayMaxProd}"
 			
@@ -159,7 +160,8 @@ def energyRefresh() {
                           ,sendEvent(name: 'energy_life', value: (String.format("%5.2f",energyLife)))
                           ,sendEvent(name: 'power', value: (currentPower))
 						  ,sendEvent(name: 'production_level', value: (String.format("%5.2f",productionLevel)))
-						  ,sendEvent(name: 'today_max_prod', value: (String.format("%5.2f",todayMaxProd)))
+						  ,sendEvent(name: 'today_max_prod', value: (todayMaxProd))
+						  ,sendEvent(name: 'today_max_prod_str', value: (String.format("%5.2f",todayMaxProd)))
 						  ,sendEvent(name: 'reported_id', value: (systemId))
 	                     ])
 			
