@@ -65,6 +65,8 @@ def initialize() {
     logDebugIfEnabled("initialize called reportMin=${reportMin}")
 	subscribe(checkPowerMeter, "power", powerCheck)
     state.reportedTime = 0
+	// Used to ignore first report since Aeon is sending random false reports of 0 power
+	state.firstZeroReport = true
     state.debugOutput = ("true" == debugOutput)
 }
 
@@ -97,8 +99,17 @@ def powerCheck(evt) {
     } else {
         // If Under report
         if (meterValue < powerLimit) {
-            def message = "$checkPowerMeter reporting power under $powerLimit:${meterValue}"
-            sendPowerNotification(message)
+			if (meterValue == 0 && state.firstZeroReport) {
+				// Zero meter values are sometimes false, ignore first and reset if second is higher
+				// Change first report to false so we report on the next send low value
+			    state.firstZeroReport = false	
+			} else {
+                def message = "$checkPowerMeter reporting power under $powerLimit:${meterValue}"
+                sendPowerNotification(message)
+			}
+        } else {
+		   //  Once we have a good reading reset first report
+		   state.firstZeroReport = true
         }
     }
 }
