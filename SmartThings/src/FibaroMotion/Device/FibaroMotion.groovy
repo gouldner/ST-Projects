@@ -62,7 +62,7 @@
  * @return none
  */
  metadata {
-	definition (name: "RRG Enhanced - Fibaro Motion Sensor (Beta)", namespace: "gouldner", author: "SmartThings") {
+	definition (name: "RRG Enhanced - Fibaro Motion Sensor", namespace: "gouldner", author: "SmartThings") {
 		capability 	"Motion Sensor"
 		capability 	"Temperature Measurement"
 		capability 	"Acceleration Sensor"
@@ -176,6 +176,8 @@ def configure() {
 	    log.debug "Setting LED on"
  	    // ToDo Add preference for other available Led Signal Modes
 		def ledModeConfigValue=0
+		log.debug "ledModeFrequency=$ledModeFrequency"
+		log.debug "ledModeColor=$ledModeColor"
 		if (ledModeFrequency == "Once") {
 			if (ledModeColor == "Temp") {
 				    ledModeConfigValue=1
@@ -250,6 +252,7 @@ def configure() {
 		    log.warn "Unknown LED Frequencey-Setting LED Mode to default of 10"
 			ledModeConfigValue=10
 		}
+		log.debug "LED Mode setting $ledModeConfigValue"
 		cmds << zwave.configurationV1.configurationSet(configurationValue: [ledModeConfigValue], parameterNumber: 80, size: 1).format()
 	}
 	cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
