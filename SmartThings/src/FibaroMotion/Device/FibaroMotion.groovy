@@ -38,19 +38,19 @@
 
  preferences {
  
-     input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-     input("ledOnOff", "enum", title: "LED On/Off ?", default:"On", options: ["On","Off"])
-	 input("ledModeFrequency", "enum", title: "LED Frequency", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
-	 input("ledModeColor", "enum", title: "LED Color (80)?", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
+     input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.   Note: Param Settings indicated in parentheses (p-80 p1)=Parameter 80 part 1, this helps you lookup possible values in manual.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+     input("ledOnOff", "enum", title: "LED On/Off (p-80 p1)?", default:"On", options: ["On","Off"])
+	 input("ledModeFrequency", "enum", title: "LED Frequency (p-80 p2)?", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
+	 input("ledModeColor", "enum", title: "LED Color ? (p-80 p3)", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
 	 input("ledBrightness", "number",
-		   title: "LED Brightness % (81)? ",
-		   description: "LED Brightness Level Percent (1-100)", defaultValue:50)
-	 input("tamperLedOnOff", "enum", title: "Tamper LED (89)?", default:"On", options: ["On","Off"])
+		   title: "LED Brightness 1-100% 0=ambient ? (p-81)",
+		   description: "LED Brightness Level Percent (1-100) 0=ambient based", defaultValue:50)
+	 input("tamperLedOnOff", "enum", title: "Tamper LED ? (p-89)", default:"On", options: ["On","Off"])
 	 input("illumReportThresh", "number",
-		 title: "Illum Report Threshold in Lux (40) 0-65535 0=no reports sent, 200=(default)",
+		 title: "Illum Report Threshold in Lux (p-40) 0-65535 0=no reports sent, 200=(default)",
 		 description: "Illumination reports when lux changes by this amount", defaultValue:200)
 	 input("illumReportInt", "number",
-		 title: "Illum Report Interval in Seconds (42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
+		 title: "Illum Report Interval in Seconds (p-42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
 		 description: "Time interval in seconds to report illum regardless of change", defaultValue:0)
  }
  
@@ -261,8 +261,8 @@ def configure() {
 	log.debug "LED Brightness $ledBrightness"
 	def brightness = ledBrightness as int
 	if (brightness<0) {
-		log.warn "LED Brightness less than 0, setting to 0"
-	    brightness=0
+		log.warn "LED Brightness less than 0, setting to 1"
+	    brightness=1
 	}
 	if (brightness>100) {
 		log.warn "LED Brightness greater than 100, setting to 100"
