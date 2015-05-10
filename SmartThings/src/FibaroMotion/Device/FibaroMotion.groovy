@@ -23,35 +23,45 @@
  *
  * Change Log:
  *
- * 1.	20150125	Todd Wackford
+ * 1.	20150125 Todd Wackford
  *		Incorporated Crc16Encap function to support core code changes. Duncan figured it
  *		out as usual.
  *
- * 2.	20150125	Todd Wackford
+ * 2.	20150125 Todd Wackford
  *		Leaned out parse and moved most device info getting into configuration method.
  *
- * 3.   20150318    Ronald Gouldner
+ * 3.   20150318 Ronald Gouldner
  *      Added LedOnOff Preference and comment pref setting
- * 4.   20150504    Ronald Gouldner
+ * 
+ * 4.   20150504 Ronald Gouldner
  *      Added more preferences
+ * 
+ * 5.	20150510 Michael Struck
+ *		Added more preferences, re-arranged interface, fixed some code syntax
  */
 
  preferences {
  
      input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.   Note: Param Settings indicated in parentheses (p-80 p1)=Parameter 80 part 1, this helps you lookup possible values in manual.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-     input("ledOnOff", "enum", title: "LED On/Off (p-80 p1)?", default:"On", options: ["On","Off"])
-	 input("ledModeFrequency", "enum", title: "LED Frequency (p-80 p2)?", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
-	 input("ledModeColor", "enum", title: "LED Color ? (p-80 p3)", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
-	 input("ledBrightness", "number",
-		   title: "LED Brightness 1-100% 0=ambient ? (p-81)",
-		   description: "LED Brightness Level Percent (1-100) 0=ambient based", defaultValue:50)
-	 input("tamperLedOnOff", "enum", title: "Tamper LED ? (p-89)", default:"On", options: ["On","Off"])
-	 input("illumReportThresh", "number",
-		 title: "Illum Report Threshold in Lux (p-40) 0-65535 0=no reports sent, 200=(default)",
-		 description: "Illumination reports when lux changes by this amount", defaultValue:200)
-	 input("illumReportInt", "number",
-		 title: "Illum Report Interval in Seconds (p-42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
-		 description: "Time interval in seconds to report illum regardless of change", defaultValue:0)
+	
+	input("sensitivity", "number", title: "Sensitivity (p-1) 8-255, 10=(default)", defaultValue:10)
+	input("blindTime", "number", title: "Blind Time (p-2) 0-15, 15=(default)", defaultValue:15)	
+
+	input("illumReportThresh", "number", title: "Illum Report Threshold in Lux (p-40) 0-65535 0=no reports sent, 200=(default)",
+		description: "Illumination reports when lux changes by this amount", defaultValue:200)
+	input("illumReportInt", "number",
+		title: "Illum Report Interval in Seconds (p-42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
+		description: "Time interval in seconds to report illum regardless of change", defaultValue:0)     	
+
+	input("ledOnOff", "enum", title: "LED On/Off (p-80 p1)?", default:"On", options: ["On","Off"])
+	input("ledModeFrequency", "enum", title: "LED Frequency (p-80 p2)?", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
+	input("ledModeColor", "enum", title: "LED Color ? (p-80 p3)", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
+	input("ledBrightness", "number",
+		title: "LED Brightness 1-100% 0=ambient ? (p-81)",
+		description: "LED Brightness Level Percent (1-100) 0=ambient based", defaultValue:50)
+	input("tamperLedOnOff", "enum", title: "Tamper LED ? (p-89)", default:"On", options: ["On","Off"])
+	
+		 
  }
  
  /**
@@ -109,7 +119,7 @@
 			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
-			state "temperature", label:'${currentValue}°',
+			state "temperature", label:'${currentValue}Â°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
 				[value: 44, color: "#1e9cbb"],
@@ -155,23 +165,41 @@
  */
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
-    def cmds = []
+    	def cmds = []
     
-    // send associate to group 3 to get sensor data reported only to hub
-    cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
+    	// send associate to group 3 to get sensor data reported only to hub
+    	cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
 
 	// turn on tamper sensor with active/inactive reports (use it as an acceleration sensor) default is 0, or off
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
+    	cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
         
-    // temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format() 
+    	// temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
+    	cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
+    	cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format() 
 	
+	//  Set Sensitivity (1) Values 8-255 default 10
+	log.debug "Setting sensitivity"
+	def senseValue = sensitivity as int
+	if (senseValue < 8 || senseValue > 255) {
+		log.warn "Unknown sensitivity-Setting to default of 10"
+		senseValue
+	}
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [senseValue], parameterNumber: 1, size: 1).format()
+        
+	//  Set Blind Time (3) Value 0-15 default 15
+	log.debug "Setting blind time"
+	def blindValue = blindTime as int
+	if (blindValue < 0 || blindValue > 15) {
+		log.warn "Blind time outside allowed values-Setting to default of 15"
+		blindValue = 15
+	}
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [blindValue], parameterNumber: 2, size: 1).format()
+        
 	if (ledOnOff == "Off") {
 		log.debug "Setting LED off"
 		// 0 = LED Off signal mode
-	    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
+	    	cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
 	} else {
 	    log.debug "Setting LED on"
  	    // ToDo Add preference for other available Led Signal Modes
@@ -349,9 +377,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 
 def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, Map item1) { 
 	log.debug "manufacturerId:   ${cmd.manufacturerId}"
-    log.debug "manufacturerName: ${cmd.manufacturerName}"
-    log.debug "productId:        ${cmd.productId}"
-    log.debug "productTypeId:    ${cmd.productTypeId}"
+    	log.debug "manufacturerName: ${cmd.manufacturerName}"
+    	log.debug "productId:        ${cmd.productId}"
+    	log.debug "productTypeId:    ${cmd.productTypeId}"
 }
 
 def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {	
@@ -486,7 +514,7 @@ def test() {
  * A "Zwave Tweaker" app will be developed as an interface to do this. Or the user can
  * write his/her own app to envoke this method. No type or value checking is done to
  * compare to what device capability or reaction. It is up to user to read OEM
- * documentation prio to envoking this method.
+ * documentation prior to envoking this method.
  *
  * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
  *
@@ -575,9 +603,10 @@ def resetParams2StDefaults() {
 def listCurrentParams() {
 	log.debug "Listing of current parameter settings of ${device.displayName}"
     def cmds = []
-/*
+
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 2).format()
+/*    
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 6).format()
