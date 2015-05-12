@@ -42,17 +42,17 @@
 
  preferences {
  
-     input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.   Note: Param Settings indicated in parentheses (p-80 p1)=Parameter 80 part 1, this helps you lookup possible values in manual.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-	
+    input description: "When changing these values make sure you triple click the sensor b-button (inside) to wake the device (blue light displays) and then select the \"configure\" tile after clicking done on this page.   Note: Param Settings indicated in parentheses (p-80 p1)=Parameter 80 part 1, this helps you lookup possible values in manual.", 
+	      displayDuringSetup: false, type: "paragraph", element: "paragraph"	
 	input("sensitivity", "number", title: "Sensitivity (p-1) 8-255, 10=(default)", defaultValue:10)
 	input("blindTime", "number", title: "Blind Time (p-2) 0-15, 15=(default)", defaultValue:15)	
-
+	input("pirOperatingMode", "enum", title: "PIR Operating Mode (p-8)?", default: "Both", options: ["Both","Day","Night"])
+	input("nightDayThreshold", "number", title: "Night/Day Threshold (p-9) 1-65535 (default=200)", defaultValue:200)
 	input("illumReportThresh", "number", title: "Illum Report Threshold in Lux (p-40) 0-65535 0=no reports sent, 200=(default)",
 		description: "Illumination reports when lux changes by this amount", defaultValue:200)
 	input("illumReportInt", "number",
 		title: "Illum Report Interval in Seconds (p-42) 0-65535 0=none (default), <5 may block temp readings, too low will waste battery",
 		description: "Time interval in seconds to report illum regardless of change", defaultValue:0)     	
-
 	input("ledOnOff", "enum", title: "LED On/Off (p-80 p1)?", default:"On", options: ["On","Off"])
 	input("ledModeFrequency", "enum", title: "LED Frequency (p-80 p2)?", default: "Once", options: ["Once","Long-Short","Long-Two Short"])
 	input("ledModeColor", "enum", title: "LED Color ? (p-80 p3)", default:"Temp", options: ["Temp","Flashlight","White","Red","Green","Blue","Yellow","Cyan","Magenta"])
@@ -140,7 +140,7 @@
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
         standardTile("listCurrentParams", "listCurrentParams", inactiveLabel: false, decoration: "flat") {
-			state "listCurrentParams", label:'List', action:"listCurrentParams"
+			state "listCurrentParams", label:'', action:"listCurrentParams", icon:"st.quirky.egg-minder.quirky-egg-report"
 		}
         standardTile("acceleration", "device.acceleration") {
 			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
@@ -165,41 +165,88 @@
  */
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
-    	def cmds = []
+	def cmds = []
     
-    	// send associate to group 3 to get sensor data reported only to hub
-    	cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-
-	// turn on tamper sensor with active/inactive reports (use it as an acceleration sensor) default is 0, or off
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
-        
-    	// temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
-    	cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format() 
+	// send associate to group 3 to get sensor data reported only to hub
+	cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
 	
 	//  Set Sensitivity (1) Values 8-255 default 10
-	log.debug "Setting sensitivity"
+	log.debug "Setting sensitivity $sensitivity"
 	def senseValue = sensitivity as int
 	if (senseValue < 8 || senseValue > 255) {
 		log.warn "Unknown sensitivity-Setting to default of 10"
-		senseValue
+		senseValue = 10
 	}
+	log.debug "Setting Param 1 to $senseValue"
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [senseValue], parameterNumber: 1, size: 1).format()
         
 	//  Set Blind Time (3) Value 0-15 default 15
-	log.debug "Setting blind time"
+	log.debug "Setting blind time $blindTime"
 	def blindValue = blindTime as int
 	if (blindValue < 0 || blindValue > 15) {
 		log.warn "Blind time outside allowed values-Setting to default of 15"
 		blindValue = 15
 	}
+	log.debug "Setting Param 2 to $blindValue"
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [blindValue], parameterNumber: 2, size: 1).format()
-        
+    
+	log.debug "Setting pir operating mode $pirOperatingMode"
+	def pirOperatingModeParamValue=0 // Both (default)
+	if (pirOperatingMode == "Day") {
+		pirOperatingModeParamValue=1
+	} else if (pirOperatingMode == "Night") {
+	    pirOperatingModeParamValue=2
+	}
+	log.debug "Setting Param 8 to $pirOperatingModeParamValue"
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [pirOperatingModeParamValue], parameterNumber: 8, size: 1).format()
+	
+	log.debug "Setting Night/Day threshold $nightDayThreshold"
+	def nightDayThresholdAsInt = nightDayThreshold.toInteger()
+	if (nightDayThresholdAsInt >= 1 && nightDayThresholdAsInt <= 65535 ) {
+		def short nightDayThresholdLow = nightDayThresholdAsInt & 0xFF
+		def short nightDayThresholdHigh = (nightDayThresholdAsInt >> 8) & 0xFF
+		def nightDayThresholdBytes = [nightDayThresholdHigh, nightDayThresholdLow]
+		log.debug "Setting Param 9 to $nightDayThresholdBytes"
+		cmds << zwave.configurationV1.configurationSet(configurationValue: nightDayThresholdBytes, parameterNumber: 9, size: 2).format()
+	} else {
+		log.warn "Setting Param 9 out of rang changing to default of 200"
+	    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 9, size: 2).format()
+	}
+	
+	
+	// turn on tamper sensor with active/inactive reports (use it as an acceleration sensor) default is 0, or off
+	log.debug "Setting Param 24 to value of 4 - HARD CODED"
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
+	
+	log.debug "Illum Report Threshole Preference illumReportThresh=$illumReportThresh"
+	def illumReportThreshAsInt = illumReportThresh.toInteger()
+	if (illumReportThreshAsInt >= 0 && illumReportThreshAsInt <= 65535 ) {
+		def short illumReportThreshLow = illumReportThreshAsInt & 0xFF
+		def short illumReportThreshHigh = (illumReportThreshAsInt >> 8) & 0xFF
+		def illumReportThreshBytes = [illumReportThreshHigh, illumReportThreshLow]
+		log.debug "Setting Param 40 to $illumReportThreshBytes"
+		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportThreshBytes, parameterNumber: 40, size: 2).format()
+	}
+	
+	log.debug "Illum Interval Preference illumReportInt=$illumReportInt"
+	def illumReportIntAsInt = illumReportInt.toInteger()
+	if (illumReportIntAsInt >= 0 && illumReportIntAsInt <= 65535 ) {
+		def short illumReportIntLow = illumReportIntAsInt & 0xFF
+		def short illumReportIntHigh = (illumReportIntAsInt >> 8) & 0xFF
+		def illumReportBytes = [illumReportIntHigh, illumReportIntLow]
+		log.debug "Setting Param 42 to $illumReportBytes"
+		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
+	}
+	
+	// temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
+	log.debug "Setting Param 60 to value of 5 - HARD CODED"
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
+	  
 	if (ledOnOff == "Off") {
 		log.debug "Setting LED off"
 		// 0 = LED Off signal mode
-	    	cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
+		log.debug "Setting Param 80 to 0"
+	    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
 	} else {
 	    log.debug "Setting LED on"
  	    // ToDo Add preference for other available Led Signal Modes
@@ -208,26 +255,26 @@ def configure() {
 		log.debug "ledModeColor=$ledModeColor"
 		if (ledModeFrequency == "Once") {
 			if (ledModeColor == "Temp") {
-				    ledModeConfigValue=1
+					ledModeConfigValue=1
 			} else if (ledModeColor == "Flashlight") {
-				    ledModeConfigValue=2
+					ledModeConfigValue=2
 			} else if (ledModeColor == "White") {
-				    ledModeConfigValue=3
+					ledModeConfigValue=3
 			}else if (ledModeColor == "Red") {
-				    ledModeConfigValue=4
+					ledModeConfigValue=4
 			}else if (ledModeColor == "Green") {
-				    ledModeConfigValue=5
+					ledModeConfigValue=5
 			}else if (ledModeColor == "Blue") {
-				    ledModeConfigValue=6
+					ledModeConfigValue=6
 			}else if (ledModeColor == "Yellow") {
-				    ledModeConfigValue=7
+					ledModeConfigValue=7
 			}else if (ledModeColor == "Cyan") {
-				    ledModeConfigValue=8
+					ledModeConfigValue=8
 			}else if (ledModeColor == "Magenta") {
-				    ledModeConfigValue=9
+					ledModeConfigValue=9
 			} else {
-			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
-				ledModeConfigValue=10
+				log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+					ledModeConfigValue=10
 			}
 		} else if (ledModeFrequency == "Long-Short") {
 			if (ledModeColor == "Temp") {
@@ -249,14 +296,14 @@ def configure() {
 		    } else if (ledModeColor == "Magenta") {
 				ledModeConfigValue=18
 		    } else {
-			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+				log.warn "Unknown LED Color-Setting LED Mode to default of 10"
 				ledModeConfigValue=10
 			}
 		} else if (ledModeFrequency =="Long-Two Short") {
 			if (ledModeColor == "Temp") {
 				ledModeConfigValue=19
 			} else if (ledModeColor == "Flashlight") {
-			    log.info "Flashlight Mode selected with Frequency Long-Two Short setting ledMode to 11-flashlight mode"
+				log.info "Flashlight Mode selected with Frequency Long-Two Short setting ledMode to 11-flashlight mode"
 				ledModeConfigValue=11
 			} else if (ledModeColor == "White") {
 				ledModeConfigValue=20
@@ -273,65 +320,40 @@ def configure() {
 			} else if (ledModeColor == "Magenta") {
 				ledModeConfigValue=26
 			} else {
-			    log.warn "Unknown LED Color-Setting LED Mode to default of 10"
+				log.warn "Unknown LED Color-Setting LED Mode to default of 10"
 				ledModeConfigValue=10
 			}
 		} else {
-		    log.warn "Unknown LED Frequencey-Setting LED Mode to default of 10"
+			log.warn "Unknown LED Frequencey-Setting LED Mode to default of 10"
 			ledModeConfigValue=10
 		}
-		log.debug "LED Mode setting $ledModeConfigValue"
+		log.debug "Setting Param 80 to $ledModeConfigValue"
 		cmds << zwave.configurationV1.configurationSet(configurationValue: [ledModeConfigValue], parameterNumber: 80, size: 1).format()
 	}
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
 	
 	//  Set Brightness Parameter (81) Percentage 0-100
 	log.debug "LED Brightness $ledBrightness"
 	def brightness = ledBrightness as int
 	if (brightness<0) {
 		log.warn "LED Brightness less than 0, setting to 1"
-	    brightness=1
+		brightness=1
 	}
 	if (brightness>100) {
 		log.warn "LED Brightness greater than 100, setting to 100"
 		brightness=100
 	}
+	log.debug "Setting Param 81 to $brightness"
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [brightness], parameterNumber: 81, size: 1).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 81).format()
 	
 	if (tamperLedOnOff == "Off") {
 		log.debug "Setting Tamper LED off"
+		log.debug "Setting Param 89 to 0"
 		cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 89, size: 1).format()
 	} else {
 		log.debug "Setting Tamper LED on"
+		log.debug "Setting Param 89 to 1"
 		cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
 	}
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
-		
-	log.debug "Illum Interval Preference illumReportInt=$illumReportInt"
-	def illumReportIntAsInt = illumReportInt.toInteger()
-	if (illumReportIntAsInt >= 0 && illumReportIntAsInt <= 65535 ) {		
-		def short illumReportIntLow = illumReportIntAsInt & 0xFF
-		def short illumReportIntHigh = (illumReportIntAsInt >> 8) & 0xFF
-		def illumReportBytes = [illumReportIntHigh, illumReportIntLow]
-		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
-	}
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
-	
-	log.debug "Illum Report Threshole Preference illumReportThresh=$illumReportThresh"
-	def illumReportThreshAsInt = illumReportThresh.toInteger()
-	if (illumReportThreshAsInt >= 0 && illumReportThreshAsInt <= 65535 ) {
-		def short illumReportThreshLow = illumReportThreshAsInt & 0xFF
-		def short illumReportThreshHigh = (illumReportThreshAsInt >> 8) & 0xFF
-		def illumReportThreshBytes = [illumReportThreshHigh, illumReportThreshLow]
-		cmds << zwave.configurationV1.configurationSet(configurationValue: illumReportThreshBytes, parameterNumber: 40, size: 2).format()
-	}
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
-    
-    cmds << response(zwave.batteryV1.batteryGet())
-    cmds << response(zwave.versionV1.versionGet().format())
-    cmds << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-    cmds << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
 
 	delayBetween(cmds, 500)
 }
@@ -583,7 +605,7 @@ def resetParams2StDefaults() {
     cmds << zwave.configurationV1.configurationSet(configurationValue: [3,232], parameterNumber: 83, size: 2).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [18], parameterNumber: 86, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [28], parameterNumber: 87, size: 1).format()
-    // Tamper LED Flashing (White/REd/Blue) 0=Off 1=On
+    // Tamper LED Flashing (White/REd/Blue) 0=Off 1=On	
     cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
     
     delayBetween(cmds, 500)
@@ -610,33 +632,42 @@ def listCurrentParams() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 6).format()
+*/
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 8).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 9).format()
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 12).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 14).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 16).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 20).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 22).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 26).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
 */
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
 /*
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 26).format()
+*/
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 42).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format()
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 62).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 64).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 66).format()
 */
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 80).format()
-/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 81).format()
+/*
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 82).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 83).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 86).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 87).format()
 */
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
+	cmds << response(zwave.batteryV1.batteryGet())
+	// Not sure what these do so commenting out.
+	//cmds << response(zwave.versionV1.versionGet().format())
+	//cmds << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+	//cmds << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
     
-	delayBetween(cmds, 500)
+	delayBetween(cmds, 2000)
 }
