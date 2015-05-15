@@ -1,7 +1,7 @@
 /**
  *  Stateless On/Off Button Tile
  *
- *  Author: SmartThings
+ *  Author: Ronald Gouldner
  *
  *  Date: 2015-05-14
  */
@@ -20,7 +20,7 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("button", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-                        state "offReady", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "onReady"
+			state "offReady", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "onReady"
 			state "onReady", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "offReady"
 			state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
@@ -44,4 +44,3 @@ def off() {
     sendEvent(name: "switch", value: "off")
     sendEvent(name: "switch", value: "offReady")
 }
-
