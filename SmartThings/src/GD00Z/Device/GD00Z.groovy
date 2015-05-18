@@ -21,13 +21,10 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
-		/* RRG Gary Add capabilities START */
 		capability "Polling"
 		capability "Switch"
 		capability "Momentary"
 		capability "Relay Switch"
-		/* RRG Gary Add capabilities END */
-
 
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
@@ -53,6 +50,14 @@ metadata {
 			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
 			
 		}
+		standardTile("displayOnly", "device.door", width: 1, height: 1) {
+			state("unknown", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e")
+			state("closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e")
+			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
+			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
+			
+		}
 		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'open', action:"door control.open", icon:"st.doors.garage.garage-opening"
 		}
@@ -62,9 +67,13 @@ metadata {
 		standardTile("refresh", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+		standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
+                        state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
+                        state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
+        }
 
-		main "toggle"
-		details(["toggle", "open", "close", "refresh"])
+		main (["toggle","displayOnly"])
+		details(["toggle", "open", "close","displayOnly","button","refresh"])
 	}
 }
 
@@ -118,14 +127,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 def zwaveEvent(BarrierOperatorReport cmd) {
 	def result = []
 	def map = [ name: "door" ]
-	/* Gary RRG Add switch Map */
 	def switchMap = [ name: "switch" ]
 	
 	switch (cmd.barrierState) {
 		case BarrierOperatorReport.BARRIER_STATE_CLOSED:
 			map.value = "closed"
 			result << createEvent(name: "contact", value: "closed", displayed: false)
-			/* RRG Gary Add switch event */
 			result << createEvent(name: "switch", value: "off", displayed: false)
 			break
 		case BarrierOperatorReport.BARRIER_STATE_UNKNOWN_POSITION_MOVING_TO_CLOSE:
@@ -137,13 +144,10 @@ def zwaveEvent(BarrierOperatorReport cmd) {
 			break
 		case BarrierOperatorReport.BARRIER_STATE_UNKNOWN_POSITION_MOVING_TO_OPEN:
 			map.value = "opening"
-			// RRG Commenting out this switch  setting....seems wrong
-			//result << createEvent(name: "contact", value: "open", displayed: false)
 			break
 		case BarrierOperatorReport.BARRIER_STATE_OPEN:
 			map.value = "open"
 			result << createEvent(name: "contact", value: "open", displayed: false)
-			/* RRG Gary Add Switch Event */
 			result << createEvent(name: "switch", value: "on", displayed: false)
 			break
 	}
@@ -302,23 +306,25 @@ def close() {
 	secure(zwave.barrierOperatorV1.barrierOperatorSet(requestedBarrierState: BarrierOperatorSet.REQUESTED_BARRIER_STATE_CLOSE))
 }
 
+def on() {
+	log.debug "on() was called treat this like Open"
+	open()
+}
+
+def off() {
+	log.debug "off() was called treat like Close"
+	close()
+}
+
 def refresh() {
 	secure(zwave.barrierOperatorV1.barrierOperatorGet())
 }
 
-/* RRG Gary Add Methods START */
 def poll() {
 	secure(zwave.barrierOperatorV1.barrierOperatorGet())
 }
 
 
-def on() {
-	log.debug "on() was called and ignored"
-}
-
-def off() {
-	log.debug "off() was called and ignored"
-}
 
 def push() {
 	
@@ -341,7 +347,6 @@ def push() {
 	}
 	
 }
-/* RRG Gary Add Methods End */
 
 
 private secure(physicalgraph.zwave.Command cmd) {
