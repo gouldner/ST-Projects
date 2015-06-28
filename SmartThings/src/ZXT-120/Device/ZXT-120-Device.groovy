@@ -64,6 +64,7 @@ metadata {
 		//commands for thermostat interface
 		command "cool"
 		command "heat"
+		command "dry"
 		command "off"
 		// how do these work....do they take arguments ?
 		//command "setCoolingSetpoint"
@@ -120,7 +121,7 @@ metadata {
 		// The currently detected temperature.  Show this as a large tile, changing colors as an indiciation
 		// of the temperature
 		valueTile("temperature", "device.temperature") {
-			state("temperature", label:'${currentValue}°',
+			state("temperature", label:'${currentValue}Â°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -190,13 +191,13 @@ metadata {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor: "#d04e00"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpoint", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
+			state "heatingSetpoint", label:'${currentValue}Â° heat', unit:"F", backgroundColor:"#ffffff"
 		}
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
 		}        
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "coolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
+			state "coolingSetpoint", label:'${currentValue}Â° cool', unit:"F", backgroundColor:"#ffffff"
 		}
 		// Last Poll Tile
 		valueTile("lastPoll", "device.lastPoll", inactiveLabel: false, decoration: "flat") {
@@ -224,7 +225,7 @@ metadata {
 			state "lowerTemp", action:"lowerTemperature", backgroundColor:"#ffffff", icon: "st.thermostat.thermostat-down"
 		}
 		valueTile("temperatureSetpoint", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-			state("thermostatSetpoint", label:'${currentValue}°'
+			state("thermostatSetpoint", label:'${currentValue}Â°'
 			)
 		}
 		standardTile("temperatureRaise", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
@@ -471,7 +472,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 			map.name = "temperature"
 			// Send event to set ShortName + Temp tile
 			def shortNameVal = shortName == null ? "ZXT-120" : shortName
-		    def tempName = shortNameVal + " " + map.value + "°"
+		    def tempName = shortNameVal + " " + map.value + "Â°"
 			log.warn "Setting temperatureName $tempName" 
 			sendEvent("name":"temperatureName", "value":tempName)
 			break;
@@ -845,6 +846,7 @@ def configure() {
 // Change to the next available mode
 /*
 def switchMode() {
+
 	// Determine the thermostat's current mode of operation
 	def currentMode = device.currentState("thermostatMode")?.value
 	def lastTriedMode = getDataByName("lastTriedMode") ?: currentMode ?: "off"
@@ -987,11 +989,17 @@ def heat() {
 	switchModeHeat()
 }
 
+def dry() {
+    switchModeDry()
+}
+
 def off() {
+    log.debug "${device.name} received off request"
 	switchModeOff()
 }
 
 def on() {
+    log.debug "${device.name} received on request"
     // Added "Switch Attribute on/off for Harmony Remote
     // TODO: RRG add preference for on turns on heat or AC hard code to ac for now
     switchModeCool()
