@@ -36,8 +36,7 @@ def installed() {
 }
 
 def updated() {
-	log.debug "RRG Updated with settings: ${settings}"
-    log.debug "removing Subscriptions"
+	log.debug "Updated with settings: ${settings}"
 	unsubscribe()
 	initialize()
 }
@@ -75,11 +74,21 @@ def initialize() {
 	    subscribe(coolDevice, "switch.on", coolOnHandler)
 	    subscribe(coolDevice, "switch.off", coolOffHandler)
     } else {
+        // Note: removing children seem to fail when subscriptions exist
+        //       subscriptions should have been removed by updated() method
+        //       which calls this initialize after first install
+        //       but for some reason the subscriptions remain so wait a bit
+        //       then remove children
         runIn(300, removeAllChildDevices)
     }
 }
 
-def uninstalled() {
+def uninstalled() { 
+    // Unsubscribe (should happen automatically but causes remove children to fail
+    // if we don't do it here 
+    unsubscribe()
+    // let unsubscribe finish before removing children
+    runIn(300, removeAllChildDevices)
 }
 
 def removeAllChildDevices() {
