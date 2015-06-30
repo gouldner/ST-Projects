@@ -13,6 +13,11 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
+preferences {
+    input("testOnOff", "enum", title: "Test Enum Preference ?", default:"On", options: ["On","Off"])
+}
+
 metadata {
 	definition (name: "TestSlider", namespace: "gouldner", author: "Ronald Gouldner") {
 		command "setTestValue"
