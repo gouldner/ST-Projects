@@ -77,6 +77,9 @@ metadata {
         attribute "currentConfigCode", "STRING"
         attribute "currentTempOffset", "STRING"
         attribute "temperatureName", "STRING"
+        attribute "reportedCoolSetpoint", "STRING"
+        attribute "reportedDrySetpoint", "STRING"
+        attribute "reportedHeatSetpoint", "STRING"
 
         // Z-Wave description of the ZXT-120 device
         fingerprint deviceId: "0x0806"
@@ -154,14 +157,14 @@ metadata {
         }
 
 
-        valueTile("reportedCoolSetpoint", "device.reportedCoolSetpoint", inactiveLabel: true, decoration: "flat") {
-            state "reportedCoolSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
+        valueTile("reportedCoolingSetpoint", "device.reportedCoolingSetpoint", inactiveLabel: true, decoration: "flat") {
+            state "reportedCoolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
         }
-        valueTile("reportedDrySetpoint", "device.reportedDrySetpoint", inactiveLabel: true, decoration: "flat") {
-            state "reportedDrySetpoint", label:'${currentValue}° dry', unit:"F", backgroundColor:"#ffffff"
+        valueTile("reportedDryingSetpoint", "device.reportedDryingSetpoint", inactiveLabel: true, decoration: "flat") {
+            state "reportedDryingSetpoint", label:'${currentValue}° dry', unit:"F", backgroundColor:"#ffffff"
         }
-        valueTile("reportedHeatSetpoint", "device.reportedHeatSetpoint", inactiveLabel: true, decoration: "flat") {
-            state "reportedHeatSetpoint", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
+        valueTile("reportedHeatingSetpoint", "device.reportedHeatingSetpoint", inactiveLabel: true, decoration: "flat") {
+            state "reportedHeatingSetpoint", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
         }
 
 
@@ -245,7 +248,7 @@ metadata {
         main (["temperature","temperatureName"])
         details(["temperature", "battery", "off",
                  "cool", "dry", "heat",
-                 "reportedCoolSetpoint","reportedDrySetpoint","reportedHeatSetpoint",
+                 "reportedCoolingSetpoint","reportedDryingSetpoint","reportedHeatingSetpoint",
                  "heatingSetpoint", "heatSliderControl",
                  "coolingSetpoint", "coolSliderControl",
                  "thermostatMode", "fanMode", "swingMode",
@@ -274,11 +277,11 @@ def getSetpointMap() { [
         "dryingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_DRY_AIR,
         //"reportedAutoChangeoverSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_AUTO_CHANGEOVER
 ]}
-// setpointMap - Link the setpoint descriptions with ZWave id numbers
+// setpointReportingMap - Link the setpointReportingMap tiles with ZWave id numbers
 def getSetpointReportingMap() { [
-        "reportingHeatingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1,
-        "reportingCoolingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1,
-        "reportingDryingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_DRY_AIR,
+        "reportedHeatingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1,
+        "reportedCoolingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1,
+        "reportedDryingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_DRY_AIR,
         //"reportedAutoChangeoverSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_AUTO_CHANGEOVER
 ]}
 // modeMap - Link the heating/cooling modes with their ZWave id numbers
@@ -355,6 +358,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 // The device is telling us what temperatures it is set to for a particular mode
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
 {
+    log.debug "ThermostatSetpointReport cmd=$cmd"
     // Determine the temperature and mode the device is reporting
     def cmdScale = cmd.scale == 1 ? "F" : "C"
     def map = [:]
@@ -375,8 +379,8 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
     state.precision = cmd.precision
 
     // Return the interpretation of the report
-    log.debug "Setup Report for $map.name=$map.value"
-    sendEvent("name":$map.name, "value":$map.value)
+    log.debug "Setup Report for $map.name=$map.value forcing state change true"
+    sendEvent("name":map.name, "value":map.value, "isStateChange":true)
     map
 }
 
@@ -572,14 +576,17 @@ def poll() {
     commands <<	zwave.configurationV1.configurationGet(parameterNumber: commandParameters["oscillateSetting"]).format()	// oscillate setting
 
     // add requests for each thermostat setpoint available on the device
-    for (setpoint in setpointModeMap) {
-        def supportedModes = getDataByName("supportedModes")
-        if (supportedModes.tokenize()?.contains(setpoint.key)) {
-            commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMap[setpoint.value]).format()]
-        }
+    def supportedModes = getDataByName("supportedModes")
+    for (setpoint in setpointMap) {
+        // This code doesn't work correctly....Need to fix later for now only implemented supported modes for myself
+        //if (supportedModes.tokenize()?.contains(setpoint.key)) {
+            log.debug "Requesting setpoint $setpoint.value"
+            commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpoint.value).format()]
+        //} else {
+        //    log.debug "Skipping unsupported mode $setpoint.key"
+        //}
     }
 
-    log.debug "Polling sending commands $commands"
     // send the requests
     delayBetween(commands, 2300)
 }
