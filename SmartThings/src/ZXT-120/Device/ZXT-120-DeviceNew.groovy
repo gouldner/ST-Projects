@@ -56,9 +56,16 @@ metadata {
         command "switchModeCool"
         command "switchModeDry"
         command "switchModeAuto"
+        command "switchFanLow"
+        command "switchFanMed"
+        command "switchFanHigh"
+        command "switchFanAuto"
         command "switchFanMode"
         command "switchFanOscillate"
         command "setRemoteCode"
+        command "swingModeOn"
+        command "swingModeOff"
+
 
         //commands for thermostat interface
         command "cool"
@@ -141,21 +148,50 @@ metadata {
         }
         // Power Off Mode tile
         standardTile("off", "device.thermostatMode", inactiveLabel: false) {
-            state "off", action:"switchModeOff", backgroundColor:"#ff0000", icon: "st.thermostat.heating-cooling-off"
+            state "off", action:"switchModeOff", backgroundColor:"#92C081", icon: "st.thermostat.heating-cooling-off"
         }
         // Cool Mode tile
         standardTile("cool", "device.thermostatMode", inactiveLabel: false) {
-            state "cool", action:"switchModeCool", backgroundColor:"#0000ff", icon: "st.thermostat.cool"
+            state "cool", action:"switchModeCool", backgroundColor:"#4A7BDE", icon: "st.thermostat.cool"
         }
         // Dry Mode tile
         standardTile("dry", "device.thermostatMode", inactiveLabel: false) {
-            state "dry", action:"switchModeDry", backgroundColor:"#ffffff", label: "Dry", icon: "st.Weather.weather12"
+            state "dry", action:"switchModeDry", backgroundColor:"#DBD099", label: "Dry", icon: "st.Weather.weather12"
         }
         // Heat Mode tile
         standardTile("heat", "device.thermostatMode", inactiveLabel: false) {
-            state "heat", action:"switchModeHeat", backgroundColor:"#ff0000", icon: "st.thermostat.heat"
+            state "heat", action:"switchModeHeat", backgroundColor:"#C15B47", icon: "st.thermostat.heat"
         }
 
+        // Low Fan Mode
+        standardTile("fanModeLow", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
+            state "fanLow", action:"switchFanLow", icon:"st.Appliances.appliances11", label: 'LOW'
+        }
+
+        // Medium Fan Mode
+        standardTile("fanModeMed", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
+            state "fanMed", action:"switchFanMed", icon:"st.Appliances.appliances11", label: 'MED'
+        }
+
+        // High Fan Mode
+        standardTile("fanModeHigh", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
+            state "fanHigh", action:"switchFanHigh", icon:"st.Appliances.appliances11", label: 'HIGH'
+        }
+
+        // Auto Fan Mode
+        standardTile("fanModeAuto", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
+            state "fanAuto", action:"switchFanAuto", icon:"st.Appliances.appliances11", label: 'AUTO'
+        }
+
+        // Swing mode On.
+        standardTile("swingModeOn", "device.swingMode", inactiveLabel: false, decoration: "flat") {
+            state "on", action:"swingModeOn", icon:"st.secondary.refresh-icon", label: 'Swing On'
+        }
+
+        // Swing mode Off.
+        standardTile("swingModeOff", "device.swingMode", inactiveLabel: false, decoration: "flat") {
+            state "off", action:"swingModeOff", icon:"st.secondary.refresh-icon", label: 'Swing Off'
+        }
 
         valueTile("reportedCoolingSetpoint", "device.reportedCoolingSetpoint", inactiveLabel: true, decoration: "flat") {
             state "reportedCoolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
@@ -180,28 +216,32 @@ metadata {
         controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(67..84)") {
             state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
         }
+
         // Mode switch.  Indicate and allow the user to change between heating/cooling modes
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-            state "off", action:"switchMode", icon:"st.thermostat.heating-cooling-off", label: ' '
-            state "heat", action:"switchMode", icon:"st.thermostat.heat", label: ' '
-            state "emergencyHeat", action:"switchMode", icon:"st.thermostat.emergency-heat", label: ' '
-            state "cool", action:"switchMode", icon:"st.thermostat.cool", label: ' '
-            state "auto", action:"switchMode", icon:"st.thermostat.auto", label: ' '
-            state "dry", action:"switchMode", icon:"st.Weather.weather12", label: 'Dry'
+            state "off", icon:"st.thermostat.heating-cooling-off", label: ' '
+            state "heat", icon:"st.thermostat.heat", label: ' '
+            state "emergencyHeat", icon:"st.thermostat.emergency-heat", label: ' '
+            state "cool", icon:"st.thermostat.cool", label: ' '
+            state "auto", icon:"st.thermostat.auto", label: ' '
+            state "dry", icon:"st.Weather.weather12", label: 'Dry'
             state "autoChangeover", icon:"st.thermostat.auto", label: ' '
         }
+
         // Fan mode switch.  Indicate and allow the user to change between fan speed settings
         standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-            state "fanAuto", action:"switchFanMode", icon:"st.Appliances.appliances11", label: 'AUTO'
-            state "fanLow", action:"switchFanMode", icon:"st.Appliances.appliances11", label: 'LOW'
-            state "fanMedium", action:"switchFanMode", icon:"st.Appliances.appliances11", label: 'MED'
-            state "fanHigh", action:"switchFanMode", icon:"st.Appliances.appliances11", label: 'HIGH'
+            state "fanAuto", icon:"st.Appliances.appliances11", label: 'AUTO'
+            state "fanLow", icon:"st.Appliances.appliances11", label: 'LOW'
+            state "fanMedium", icon:"st.Appliances.appliances11", label: 'MED'
+            state "fanHigh", icon:"st.Appliances.appliances11", label: 'HIGH'
         }
+
         // Swing mode switch.  Indicate and allow the user to change between fan oscillation settings
         standardTile("swingMode", "device.swingMode", inactiveLabel: false, decoration: "flat", canChangeIcon: true, canChangeBackground: true) {
-            state "on", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing On'
-            state "off", action:"switchFanOscillate", icon:"st.secondary.refresh-icon", label: 'Swing Off'
+            state "on", icon:"st.secondary.refresh-icon", label: 'Swing On'
+            state "off", icon:"st.secondary.refresh-icon", label: 'Swing Off'
         }
+
         // Extra Temperature Tile with Name for Home Screen
         valueTile("temperatureName", "device.temperatureName", inactiveLabel: false, decoration: "flat") {
             state "temperatureName", label:'${currentValue}', unit:""
@@ -246,14 +286,16 @@ metadata {
         // starting in the upper left working right then down.
         //main "temperature"
         main (["temperature","temperatureName"])
-        details(["temperature", "battery", "off",
+        details(["temperature", "battery", "temperatureName",
+                 "thermostatMode", "fanMode", "swingMode",
                  "cool", "dry", "heat",
-                 "reportedCoolingSetpoint","reportedDryingSetpoint","reportedHeatingSetpoint",
+                 "reportedCoolingSetpoint","off","reportedHeatingSetpoint",
+                 "fanModeLow","fanModeMed","fanModeHigh",
+                 "fanModeAuto", "swingModeOn", "swingModeOff",
                  "heatingSetpoint", "heatSliderControl",
                  "coolingSetpoint", "coolSliderControl",
-                 "thermostatMode", "fanMode", "swingMode",
-                 "temperatureName", "refresh", "configure",
-                 "lastPoll", "currentConfigCode", "currentTempOffset"
+                 "lastPoll", "currentConfigCode", "currentTempOffset",
+                 "refresh", "configure"
         ])
     }
 }
@@ -580,8 +622,8 @@ def poll() {
     for (setpoint in setpointMap) {
         // This code doesn't work correctly....Need to fix later for now only implemented supported modes for myself
         //if (supportedModes.tokenize()?.contains(setpoint.key)) {
-            log.debug "Requesting setpoint $setpoint.value"
-            commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpoint.value).format()]
+        log.debug "Requesting setpoint $setpoint.value"
+        commands << [zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpoint.value).format()]
         //} else {
         //    log.debug "Skipping unsupported mode $setpoint.key"
         //}
@@ -899,15 +941,16 @@ def setThermostatMode(String value) {
         def setpointMode = physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1
         sendThermostatSetpointForMode(tempValue, setpointMode)
     } else if (value == "dry" || value == "off") {
-        delayBetween([
-                // Command the device to change to the given mode
-                zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
-                // Request an update to make sure it worked
-                zwave.thermostatModeV2.thermostatModeGet().format()
-        ])
+        log.debug("Sending $value mode")
     } else {
         log.warn("Unknown thermostat mode set:$value")
     }
+    delayBetween([
+            // Command the device to change to the given mode
+            zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
+            // Request an update to make sure it worked
+            zwave.thermostatModeV2.thermostatModeGet().format()
+    ])
 }
 
 
@@ -981,19 +1024,23 @@ def autoChangeover() {
     setThermostatMode("autoChangeover")
 }
 
-def fanLow() {
+def switchFanLow() {
+    log.debug "setting fan mode low"
     setThermostatFanMode("fanLow")
 }
 
-def fanMedium() {
+def switchFanMed() {
+    log.debug "setting fan mode med"
     setThermostatFanMode("fanMedium")
 }
 
-def fanHigh() {
+def switchFanHigh() {
+    log.debug "setting fan mode high"
     setThermostatFanMode("fanHigh")
 }
 
-def fanAuto() {
+def switchFanAuto() {
+    log.debug "setting fan mode auto"
     setThermostatFanMode("fanAuto")
 }
 
@@ -1048,6 +1095,16 @@ def switchFanOscillate() {
 
     // Make the new swingMode happen
     setFanOscillate(swingMode)
+}
+
+def swingModeOn() {
+    log.debug "Setting Swing mode On"
+    setFanOscillate(true)
+}
+
+def swingModeOff() {
+    log.debug "Setting Swing mode Off"
+    setFanOscillate(false)
 }
 
 // Set Fan Oscillate
