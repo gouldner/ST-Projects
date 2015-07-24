@@ -806,22 +806,17 @@ def setThermostatSetpoint(Double degrees, setpointMode = null) {
 // Configure
 // Syncronize the device capabilities with those that the UI provides
 def configure() {
-    def commands = []
-
-    log.debug "configure: Setting Remote Code"
-    setRemoteCode()
-    log.debug "configure: Setting Temp Offset"
-    setTempOffset()
-    // Request the device's current heating/cooling mode
-    commands << zwave.thermostatModeV2.thermostatModeSupportedGet().format()
-    // Request the device's current heating/cooling mode
-    commands <<	zwave.thermostatModeV2.thermostatModeSupportedGet().format()
-    // Request the device's current fan speed
-    commands <<	zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format()
-    // Assign the device to ZWave group 1
-    commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
-    log.debug "configure: Sending commands for configure $commands"
-    delayBetween(commands, 2300)
+    delayBetween([
+            // update the device's remote code to ensure it provides proper mode info
+            setRemoteCode(),
+            setTempOffset(),
+            // Request the device's current heating/cooling mode
+            zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
+            // Request the device's current fan speed
+            zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format(),
+            // Assign the device to ZWave group 1
+            zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
+    ], 2300)
 }
 
 //***** Change mode */
