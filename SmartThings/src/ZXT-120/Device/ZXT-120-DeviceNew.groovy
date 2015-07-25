@@ -84,9 +84,8 @@ metadata {
         attribute "currentConfigCode", "STRING"
         attribute "currentTempOffset", "STRING"
         attribute "temperatureName", "STRING"
-        attribute "reportedCoolSetpoint", "STRING"
-        attribute "reportedDrySetpoint", "STRING"
-        attribute "reportedHeatSetpoint", "STRING"
+        attribute "reportedCoolingSetpoint", "STRING"
+        attribute "reportedHeatingSetpoint", "STRING"
 
         // Z-Wave description of the ZXT-120 device
         fingerprint deviceId: "0x0806"
@@ -196,9 +195,7 @@ metadata {
         valueTile("reportedCoolingSetpoint", "device.reportedCoolingSetpoint", inactiveLabel: true, decoration: "flat") {
             state "reportedCoolingSetpoint", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
         }
-        valueTile("reportedDryingSetpoint", "device.reportedDryingSetpoint", inactiveLabel: true, decoration: "flat") {
-            state "reportedDryingSetpoint", label:'${currentValue}° dry', unit:"F", backgroundColor:"#ffffff"
-        }
+
         valueTile("reportedHeatingSetpoint", "device.reportedHeatingSetpoint", inactiveLabel: true, decoration: "flat") {
             state "reportedHeatingSetpoint", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
         }
@@ -323,8 +320,6 @@ def getSetpointMap() { [
 def getSetpointReportingMap() { [
         "reportedHeatingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1,
         "reportedCoolingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1,
-        "reportedDryingSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_DRY_AIR,
-        //"reportedAutoChangeoverSetpoint": physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_AUTO_CHANGEOVER
 ]}
 // modeMap - Link the heating/cooling modes with their ZWave id numbers
 def getModeMap() { [
@@ -393,36 +388,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     map.unit = "%"
     map.displayed = false
     log.debug "Battery Level Reported=$map.value"
-    map
-}
-
-// - Thermostat Setpoint Report
-// The device is telling us what temperatures it is set to for a particular mode
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
-{
-    log.debug "ThermostatSetpointReport cmd=$cmd"
-    // Determine the temperature and mode the device is reporting
-    def cmdScale = cmd.scale == 1 ? "F" : "C"
-    def map = [:]
-    map.value = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
-    map.unit = getTemperatureScale()
-    map.displayed = false
-
-    // Determine what mode the setpoint is for, if the mode is not valid, bail out
-    def name = setpointReportingMap.find {it.value == cmd.setpointType}?.key
-    if (name == null) {
-        log.warn "Setpoint Report for Unknown Type $cmd.setpointType"
-        return [:]
-    }
-    map.name = name
-    // So we can respond with same format
-    state.size = cmd.size
-    state.scale = cmd.scale
-    state.precision = cmd.precision
-
-    // Return the interpretation of the report
-    log.debug "Setup Report for $map.name=$map.value forcing state change true"
-    sendEvent("name":map.name, "value":map.value, "isStateChange":true)
     map
 }
 
@@ -703,7 +668,7 @@ def setThermostatSetpointForMode(Double degrees, setpointMode) {
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
 	def locationScale = getTemperatureScale()
 	def p = (state.precision == null) ? 1 : state.precision
-	
+
 	def convertedDegrees
 	if (locationScale == "C" && deviceScaleString == "F") {
 		convertedDegrees = celsiusToFahrenheit(degrees)
@@ -712,10 +677,10 @@ def setThermostatSetpointForMode(Double degrees, setpointMode) {
 	} else {
 		convertedDegrees = degrees
 	}
-	
+
 	// Report the new temperature being set
 	log.debug "new temp ${degrees}"
-	
+
 	// Send the new temperature from the thermostat and request confirmation
 	//delayBetween([
 	//	zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
@@ -723,32 +688,6 @@ def setThermostatSetpointForMode(Double degrees, setpointMode) {
 	//])
 }
 */
-
-def sendThermostatSetpointForMode(Double degrees, setpointMode) {
-    // Convert the temperature from the UserInterface's temperature scale to the device's scale
-    def deviceScale = state.scale ?: 1
-    def deviceScaleString = deviceScale == 2 ? "C" : "F"
-    def locationScale = getTemperatureScale()
-    def p = (state.precision == null) ? 1 : state.precision
-
-    def convertedDegrees
-    if (locationScale == "C" && deviceScaleString == "F") {
-        convertedDegrees = celsiusToFahrenheit(degrees)
-    } else if (locationScale == "F" && deviceScaleString == "C") {
-        convertedDegrees = fahrenheitToCelsius(degrees)
-    } else {
-        convertedDegrees = degrees
-    }
-
-    // Report the new temperature being set
-    log.debug "new temp ${degrees}"
-
-    // Send the new temperature from the thermostat and request confirmation
-    delayBetween([
-            zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-            zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: setpointMode).format()
-    ])
-}
 
 //***** Set the thermostat */
 def setThermostatSetpoint(degrees) {
@@ -766,7 +705,7 @@ def setThermostatSetpoint(Double degrees, setpointMode = null) {
 	def deviceScaleString = deviceScale == 2 ? "C" : "F"
 	def locationScale = getTemperatureScale()
 	def p = (state.precision == null) ? 1 : state.precision
-	
+
 	def convertedDegrees
 	if (locationScale == "C" && deviceScaleString == "F") {
 		convertedDegrees = celsiusToFahrenheit(degrees)
@@ -775,16 +714,16 @@ def setThermostatSetpoint(Double degrees, setpointMode = null) {
 	} else {
 		convertedDegrees = degrees
 	}
-	
+
 	// If a cooling/heating mode setpoint wasn't specified, use the current mode
 	if (setpointMode == null) {
 		def mode = device.currentState("thermostatMode")?.value ?: null
 		setpointMode = setpointMap[setpointModeMap[mode]] ?: 0
 	}
-	
+
 	// Report the new temperature being set
 	log.debug "new temp ${degrees}"
-	
+
 	// Send the new temperature from the thermostat and request confirmation
 	delayBetween([
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
@@ -830,21 +769,21 @@ def switchMode() {
 	// Determine the thermostat's current mode of operation
 	def currentMode = device.currentState("thermostatMode")?.value
 	def lastTriedMode = getDataByName("lastTriedMode") ?: currentMode ?: "off"
-	
+
 	// Determine what modes the device supports
 	def supportedModes = getDataByName("supportedModes")
 	def modeOrder = modes()
-	
+
 	// Determine the next mode to use, based on the current mode
 	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
 	def nextMode = next(lastTriedMode)
-	
+
 	if (supportedModes?.tokenize()?.contains(currentMode)) {
 		while (!supportedModes.tokenize()?.contains(nextMode) && nextMode != "off") {
 			nextMode = next(nextMode)
 		}
 	}
-	
+
 	// Make it so
 	switchToMode(nextMode)
 }
@@ -856,12 +795,12 @@ def switchMode() {
 def switchToMode(nextMode) {
 	// Determine the available modes
 	def supportedModes = getDataByName("supportedModes")
-	
+
 	// If the thermostat can't be set to this mode, cry about it
 	if(supportedModes && !supportedModes.tokenize()?.contains(nextMode)) {
 		log.warn "thermostat mode '$nextMode' is not supported"
 	}
-	
+
 	// If the mode is even possible
 	if (nextMode in modes()) {
 		// Try to switch to the mode
@@ -920,34 +859,80 @@ def getDataByName(String name) {
     state[name] ?: device.getDataValue(name)
 }
 
+
+// - Thermostat Setpoint Report
+// The device is telling us what temperatures it is set to for a particular mode
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd)
+{
+    log.info "RRG V1 ThermostatSetpointReport cmd=$cmd"
+    // Determine the temperature and mode the device is reporting
+    def cmdScale = cmd.scale == 1 ? "F" : "C"
+
+    def reportedTemp = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
+
+    // Determine what mode the setpoint is for, if the mode is not valid, bail out
+    def name = setpointReportingMap.find {it.value == cmd.setpointType}?.key
+    if (name == null) {
+        log.warn "Setpoint Report for Unknown Type $cmd.setpointType"
+        return
+    }
+
+    // Return the interpretation of the report
+    log.debug "Thermostat Setpoint Report for $name = $reportedTemp forcing state change true"
+    sendEvent("name":name, "value":reportedTemp, "isStateChange":true)
+}
+
 // Set Thermostat Mode
 // Set the device to the named mode
 def setThermostatMode(String value) {
+
+    def commands = []
+    def degrees=0
+    def setpointMode=null
+
     if (value == "cool") {
-        def tempValue = device.currentValue("coolingSetpoint")
-        log.debug("Sending Temp [$tempValue] for cool mode before enabling mode")
-        // Sending Cooling Temp Setpoint also turns on the Cooling so just send the temp
-        def setpointMode = physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1
-        sendThermostatSetpointForMode(tempValue, setpointMode)
+        degrees = device.currentValue("coolingSetpoint")
+        setpointMode = physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_COOLING_1
     } else if (value == "heat") {
-        def tempValue = device.currentValue("heatingSetpoint")
-        log.debug("Sending Temp [$tempValue] for heat mode before enabling mode")
-        // Sending Heating Temp Setpoint also turns on the Heat so just send the temp
-        def setpointMode = physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1
-        sendThermostatSetpointForMode(tempValue, setpointMode)
+        degrees = device.currentValue("heatingSetpoint")
+        setpointMode = physicalgraph.zwave.commands.thermostatsetpointv1.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1
     } else if (value == "dry" || value == "off") {
-        log.debug("Sending $value mode")
+        log.debug("Dry Mode or Off no need to send temp")
     } else {
         log.warn("Unknown thermostat mode set:$value")
     }
-    delayBetween([
-            // Command the device to change to the given mode
-            zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
-            // Request an update to make sure it worked
-            zwave.thermostatModeV2.thermostatModeGet().format()
-    ])
-}
 
+    // Send temp if degrees set
+    if (degrees != 0 && setpointMode != null) {
+        def deviceScale = state.scale ?: 1
+        def deviceScaleString = deviceScale == 2 ? "C" : "F"
+        def locationScale = getTemperatureScale()
+        def p = (state.precision == null) ? 1 : state.precision
+
+        def convertedDegrees
+        if (locationScale == "C" && deviceScaleString == "F") {
+            convertedDegrees = celsiusToFahrenheit(degrees)
+        } else if (locationScale == "F" && deviceScaleString == "C") {
+            convertedDegrees = fahrenheitToCelsius(degrees)
+        } else {
+            convertedDegrees = degrees
+        }
+
+        // Report the new temperature being set
+        log.debug "new temp ${degrees}"
+        log.debug("Sending Temp [$convertedDegrees] for heat mode before enabling mode")
+        // Send the new temperature from the thermostat and request confirmation
+        commands << zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointMode, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format()
+        commands << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointMode).format()
+    }
+
+    // Set thermostat mode and request confirmation
+    commands << zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format()
+    commands << zwave.thermostatModeV2.thermostatModeGet().format()
+
+    // send the requests
+    delayBetween(commands, 2300)
+}
 
 // Set Thermostat Fan Mode
 // Set the device to the named fan speed
